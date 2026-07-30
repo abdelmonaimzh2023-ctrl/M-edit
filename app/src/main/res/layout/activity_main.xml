@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🎬 M-edit"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"/>
+
+    <Button
+        android:id="@+id/btnPickVideo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📁 اختر فيديو"
+        android:textSize="18sp"/>
+
+    <VideoView
+        android:id="@+id/videoView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="10dp"
+        android:background="#000000"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp">
+
+        <Button
+            android:id="@+id/btnPlay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="▶ تشغيل"
+            android:layout_marginEnd="5dp"/>
+
+        <Button
+            android:id="@+id/btnPause"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⏸ إيقاف"
+            android:layout_marginStart="5dp"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnExport4K"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📤 تصدير 4K"
+        android:textSize="18sp"
+        android:layout_marginTop="10dp"
+        android:backgroundTint="#E91E63"/>
+</LinearLayout>
