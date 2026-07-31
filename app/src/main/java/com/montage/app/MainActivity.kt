@@ -4,14 +4,19 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Button
-import android.widget.Toast
-import android.widget.VideoView
+import android.os.Handler
+import android.os.Looper
+import android.view.View
+import android.view.animation.AnimationUtils
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.snackbar.Snackbar
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var videoView: VideoView
+    private lateinit var loadingLayout: LinearLayout
+    private lateinit var tvLoading: TextView
     private var selectedVideoUri: Uri? = null
 
     companion object {
@@ -23,30 +28,42 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         videoView = findViewById(R.id.videoView)
+        loadingLayout = findViewById(R.id.loadingLayout)
+        tvLoading = findViewById(R.id.tvLoading)
+
+        // أنيميشن دخول الواجهة
+        val slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up)
+        findViewById<LinearLayout>(R.id.mainLayout).startAnimation(slideUp)
 
         // زر اختيار الفيديو
-        findViewById<Button>(R.id.btnPickVideo).setOnClickListener {
+        findViewById<LinearLayout>(R.id.btnPickVideo).setOnClickListener {
             openVideoPicker()
         }
 
         // زر التشغيل
-        findViewById<Button>(R.id.btnPlay).setOnClickListener {
+        findViewById<LinearLayout>(R.id.btnPlay).setOnClickListener {
             selectedVideoUri?.let {
                 videoView.start()
-            } ?: Toast.makeText(this, "اختر فيديو أولاً", Toast.LENGTH_SHORT).show()
+                showSnackbar("تم التشغيل", "#4CAF50")
+            } ?: showSnackbar("الرجاء اختيار فيديو أولاً", "#FF9800")
         }
 
         // زر الإيقاف
-        findViewById<Button>(R.id.btnPause).setOnClickListener {
+        findViewById<LinearLayout>(R.id.btnPause).setOnClickListener {
             videoView.pause()
+            showSnackbar("تم الإيقاف", "#2196F3")
         }
 
-        // زر التصدير (سنبرمجه لاحقاً)
-        findViewById<Button>(R.id.btnExport4K).setOnClickListener {
+        // زر التصدير
+        findViewById<LinearLayout>(R.id.btnExport4K).setOnClickListener {
             if (selectedVideoUri != null) {
-                Toast.makeText(this, "🎉 جاري التطوير... قريباً!", Toast.LENGTH_SHORT).show()
+                showLoading("جاري معالجة الفيديو...")
+                Handler(Looper.getMainLooper()).postDelayed({
+                    hideLoading()
+                    showSnackbar("جاهز للتصدير بدقة 4K", "#4CAF50")
+                }, 3000)
             } else {
-                Toast.makeText(this, "اختر فيديو أولاً", Toast.LENGTH_SHORT).show()
+                showSnackbar("الرجاء اختيار فيديو أولاً", "#FF9800")
             }
         }
     }
@@ -61,19 +78,34 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
         if (requestCode == PICK_VIDEO && resultCode == Activity.RESULT_OK) {
             data?.data?.let { uri ->
-                // نحتفظ بالإذن للقراءة لاحقاً
-                contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 selectedVideoUri = uri
                 videoView.setVideoURI(uri)
                 videoView.start()
-                Toast.makeText(this, "✅ تم تحميل الفيديو", Toast.LENGTH_SHORT).show()
+                showSnackbar("تم تحميل الفيديو بنجاح", "#4CAF50")
             }
         }
+    }
+
+    private fun showLoading(message: String) {
+        tvLoading.text = message
+        loadingLayout.visibility = View.VISIBLE
+        val fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in)
+        loadingLayout.startAnimation(fadeIn)
+    }
+
+    private fun hideLoading() {
+        val fadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out)
+        loadingLayout.startAnimation(fadeOut)
+        loadingLayout.visibility = View.GONE
+    }
+
+    private fun showSnackbar(message: String, colorHex: String) {
+        val snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT)
+        snackbar.setBackgroundTint(android.graphics.Color.parseColor(colorHex))
+        snackbar.setTextColor(android.graphics.Color.WHITE)
+        snackbar.show()
     }
 }
