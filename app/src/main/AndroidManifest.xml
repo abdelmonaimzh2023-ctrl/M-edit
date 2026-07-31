@@ -14,7 +14,7 @@
         android:requestLegacyExternalStorage="true">
 
         <activity
-            android:name=".SplashActivity"
+            android:name=".bridge.WebViewActivity"
             android:exported="true"
             android:theme="@style/AppTheme">
             <intent-filter>
@@ -23,13 +23,12 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.projects.ProjectsActivity"
-            android:theme="@style/AppTheme"/>
-        <activity android:name=".ui.editor.EditorActivity"
-            android:theme="@style/AppTheme"/>
-        <activity android:name=".ui.export.ExportSettingsActivity"
-            android:theme="@style/AppTheme"/>
-        <activity android:name=".ui.export.ExportActivity"
-            android:theme="@style/AppTheme"/>
+        <!-- الأنشطة الأخرى تبقى كما هي (احتياط) -->
+        <activity android:name=".SplashActivity" android:theme="@style/AppTheme"/>
+        <activity android:name=".ui.projects.ProjectsActivity" android:theme="@style/AppTheme"/>
+        <activity android:name=".ui.editor.EditorActivity" android:theme="@style/AppTheme"/>
+        <activity android:name=".ui.export.ExportSettingsActivity" android:theme="@style/AppTheme"/>
+        <activity android:name=".ui.export.ExportActivity" android:theme="@style/AppTheme"/>
+        <activity android:name=".MainActivity" android:theme="@style/AppTheme"/>
     </application>
 </manifest>

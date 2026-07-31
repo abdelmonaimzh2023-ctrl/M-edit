@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>محرر الفيديو</title>
+<style>
+/* ==========================================================================
+   TOKENS — نظام التصميم
+   ========================================================================== */
+:root{
+  --bg-void:#06070a;
+  --bg-blob-1:#1e3a8a;
+  --bg-blob-2:#4c1d95;
+  --bg-blob-3:#7c1d4c;
+
+  --glass-bg:rgba(255,255,255,.055);
+  --glass-bg-strong:rgba(255,255,255,.10);
+  --glass-bg-press:rgba(255,255,255,.16);
+  --glass-border:rgba(255,255,255,.13);
+  --glass-highlight:rgba(255,255,255,.5);
+
+  --text-1:#F5F5F7;
+  --text-2:rgba(235,235,245,.62);
+  --text-3:rgba(235,235,245,.36);
+
+  --accent-blue:#0A84FF;
+  --accent-indigo:#5E5CE6;
+  --accent-orange:#FF9F0A;
+  --accent-pink:#FF375F;
+  --accent-green:#30D158;
+  --accent-red:#FF453A;
+  --accent-teal:#40C8E0;
+
+  --r-xl:28px;
+  --r-lg:22px;
+  --r-md:16px;
+  --r-sm:11px;
+
+  --ease:cubic-bezier(.22,1,.36,1);
+  --shadow-glass:0 10px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);
+  --shadow-pop:0 20px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.1);
+
+  --sat:180%;
+}
+
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Arabic", "Segoe UI", Tahoma, Geneva, sans-serif;
+  background:var(--bg-void);
+  color:var(--text-1);
+  overflow:hidden;
+  position:fixed;
+  inset:0;
+  -webkit-user-select:none;
+  user-select:none;
+  letter-spacing:.1px;
+}
+button{font-family:inherit; color:inherit; background:none; border:none; cursor:pointer;}
+input[type="range"]{-webkit-appearance:none; appearance:none; background:transparent;}
+img,video{-webkit-user-drag:none;}
+::selection{background:var(--accent-blue); color:#fff;}
+.ltr{direction:ltr; unicode-bidi:isolate;}
+
+/* ==========================================================================
+   خلفية زجاجية متحركة (Ambient) — العنصر المميّز للتصميم
+   ========================================================================== */
+.ambient{position:fixed; inset:0; z-index:0; overflow:hidden; background:var(--bg-void);}
+.ambient::after{
+  content:""; position:absolute; inset:0;
+  background-image:radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+  background-size:3px 3px; opacity:.5; mix-blend-mode:overlay;
+}
+.blob{position:absolute; border-radius:50%; filter:blur(70px); opacity:.55; mix-blend-mode:screen; will-change:transform;}
+.blob-1{width:60vw; height:60vw; background:var(--bg-blob-1); top:-20%; right:-15%; animation:float1 22s ease-in-out infinite;}
+.blob-2{width:55vw; height:55vw; background:var(--bg-blob-2); bottom:-15%; left:-20%; animation:float2 26s ease-in-out infinite;}
+.blob-3{width:40vw; height:40vw; background:var(--bg-blob-3); top:40%; left:30%; animation:float3 19s ease-in-out infinite;}
+@keyframes float1{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-6%,8%) scale(1.12);}}
+@keyframes float2{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(8%,-6%) scale(1.08);}}
+@keyframes float3{0%,100%{transform:translate(-50%,-50%) scale(1);} 50%{transform:translate(-42%,-56%) scale(1.15);}}
+@media (prefers-reduced-motion:reduce){.blob{animation:none !important;}}
+
+/* ==========================================================================
+   عنصر زجاجي أساسي (Glass primitive)
+   ========================================================================== */
+.glass{
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(28px) saturate(var(--sat));
+  backdrop-filter:blur(28px) saturate(var(--sat));
+  border:1px solid var(--glass-border);
+  box-shadow:var(--shadow-glass);
+  position:relative;
+}
+.glass::before{
+  content:""; position:absolute; top:0; left:14px; right:14px; height:1px;
+  background:linear-gradient(90deg, transparent, var(--glass-highlight), transparent);
+  opacity:.35; pointer-events:none;
+}
+
+/* ==========================================================================
+   تخطيط عام
+   ========================================================================== */
+.app{position:relative; z-index:1; height:100%; display:flex; flex-direction:column;}
+
+/* ---------- الشريط العلوي ---------- */
+.topbar{
+  display:flex; align-items:center; gap:10px;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 12px;
+  border-bottom:1px solid var(--glass-border);
+  background:rgba(10,10,14,.35);
+  -webkit-backdrop-filter:blur(24px) saturate(var(--sat));
+  backdrop-filter:blur(24px) saturate(var(--sat));
+  z-index:30;
+}
+.icon-btn{
+  width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:var(--glass-bg); border:1px solid var(--glass-border);
+  transition:transform .15s var(--ease), background .15s var(--ease), opacity .2s;
+}
+.icon-btn:active{transform:scale(.88); background:var(--glass-bg-press);}
+.icon-btn svg{width:19px; height:19px;}
+.icon-btn[disabled]{opacity:.32; pointer-events:none;}
+
+.project-title-wrap{flex:1; display:flex; flex-direction:column; min-width:0; padding:0 2px;}
+.project-title{
+  font-size:15px; font-weight:600; background:transparent; border:none; color:var(--text-1);
+  outline:none; width:100%; padding:2px 0;
+}
+.project-sub{font-size:11px; color:var(--text-3); display:flex; align-items:center; gap:5px;}
+.dot{width:6px; height:6px; border-radius:50%; background:var(--accent-green); box-shadow:0 0 6px var(--accent-green);}
+.dot.sim{background:var(--accent-orange); box-shadow:0 0 6px var(--accent-orange);}
+
+.topbar-actions{display:flex; align-items:center; gap:8px;}
+.btn-export{
+  display:flex; align-items:center; gap:6px;
+  padding:9px 16px; border-radius:100px; font-size:13.5px; font-weight:700;
+  color:#fff; background:linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+  box-shadow:0 6px 20px rgba(10,132,255,.35), inset 0 1px 0 rgba(255,255,255,.3);
+  position:relative; overflow:hidden;
+  transition:transform .15s var(--ease);
+}
+.btn-export::after{
+  content:""; position:absolute; inset:0; border-radius:inherit;
+  background:linear-gradient(120deg, transparent 20%, rgba(255,255,255,.45) 40%, transparent 60%);
+  transform:translateX(-120%);
+  animation:sheen 3.2s ease-in-out infinite;
+}
+@keyframes sheen{0%,60%{transform:translateX(-120%);} 100%{transform:translateX(120%);}}
+.btn-export:active{transform:scale(.94);}
+.btn-export svg{width:15px; height:15px;}
+.btn-export[disabled]{opacity:.35; pointer-events:none; animation:none;}
+.btn-export[disabled]::after{display:none;}
+
+/* ---------- منطقة المعاينة ---------- */
+.stage-area{flex:1; min-height:0; display:flex; flex-direction:column; padding:14px 14px 0;}
+.stage{
+  flex:1; min-height:0; border-radius:var(--r-xl); overflow:hidden; position:relative;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
+    repeating-conic-gradient(#101014 0% 25%, #0a0a0d 0% 50%) 50% / 22px 22px;
+  border:1px solid var(--glass-border);
+  box-shadow:var(--shadow-glass);
+  display:flex; align-items:center; justify-content:center;
+}
+.stage video{width:100%; height:100%; object-fit:contain; display:none; background:#000;}
+.stage.has-video video{display:block;}
+
+.empty-state{display:flex; flex-direction:column; align-items:center; gap:14px; padding:30px; text-align:center;}
+.stage.has-video .empty-state{display:none;}
+.empty-icon{
+  width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:var(--glass-bg-strong); border:1px dashed var(--glass-border);
+}
+.empty-icon svg{width:28px; height:28px; color:var(--text-2);}
+.empty-state h2{font-size:15.5px; font-weight:700;}
+.empty-state p{font-size:12.5px; color:var(--text-3); max-width:220px; line-height:1.6;}
+.empty-cta{
+  margin-top:4px; padding:10px 22px; border-radius:100px; font-size:13px; font-weight:700;
+  background:var(--glass-bg-strong); border:1px solid var(--glass-border); color:var(--text-1);
+}
+.empty-cta:active{transform:scale(.95);}
+
+.stage-overlay-controls{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .2s; pointer-events:none;
+}
+.stage.has-video:active .stage-overlay-controls, .stage.show-controls .stage-overlay-controls{opacity:1; pointer-events:auto;}
+.play-toggle{
+  width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.4); backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,.2);
+}
+.play-toggle svg{width:24px; height:24px;}
+
+.stage-time{
+  position:absolute; bottom:10px; right:12px; font-size:11.5px; font-weight:600;
+  padding:5px 10px; border-radius:100px; background:rgba(0,0,0,.45);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  display:none; color:var(--text-1); letter-spacing:.3px;
+}
+.stage.has-video .stage-time{display:block;}
+
+.layer-el{
+  position:absolute; touch-action:none; cursor:grab; padding:4px 6px;
+  border:1.5px dashed transparent; border-radius:6px;
+}
+.layer-el.selected{border-color:var(--accent-blue);}
+.layer-el.text-layer{font-weight:700; white-space:nowrap; text-shadow:0 2px 10px rgba(0,0,0,.5);}
+.layer-el.emoji-layer{font-size:38px; line-height:1;}
+.layer-el.image-layer img{max-width:130px; max-height:130px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.4); display:block;}
+
+/* ---------- الخط الزمني ---------- */
+.timeline-wrap{padding:12px 14px; flex-shrink:0;}
+.timeline-panel{border-radius:var(--r-lg); padding:12px 12px 10px;}
+.timeline-ruler{display:flex; justify-content:space-between; font-size:9.5px; color:var(--text-3); padding:0 2px 8px; font-variant-numeric:tabular-nums;}
+
+.track{position:relative; height:46px; border-radius:var(--r-sm); overflow:hidden; margin-bottom:6px;
+  background:linear-gradient(90deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  border:1px solid var(--glass-border);
+}
+.track-video-strip{
+  position:absolute; inset:0;
+  background:repeating-linear-gradient(90deg, #2a2a35 0 34px, #23232c 34px 68px);
+  opacity:.9;
+}
+.track.hidden-track{display:none;}
+.track-audio .track-video-strip{
+  background:repeating-linear-gradient(90deg, rgba(94,92,230,.35) 0 2px, rgba(94,92,230,.12) 2px 6px);
+}
+.track-label{position:absolute; top:4px; right:8px; font-size:9.5px; font-weight:700; color:rgba(255,255,255,.75);
+  background:rgba(0,0,0,.35); padding:2px 7px; border-radius:100px; z-index:2; -webkit-backdrop-filter:blur(6px);}
+
+.trim-mask{position:absolute; top:0; bottom:0; background:rgba(6,7,10,.72); z-index:3;}
+.trim-mask.left{left:0;}
+.trim-mask.right{right:0;}
+.trim-handle{
+  position:absolute; top:-1px; bottom:-1px; width:16px; z-index:5; cursor:ew-resize;
+  background:var(--accent-orange); border-radius:8px;
+  box-shadow:0 0 0 2px rgba(6,7,10,.8), 0 4px 10px rgba(0,0,0,.4);
+  display:flex; align-items:center; justify-content:center;
+}
+.trim-handle::before{content:""; width:3px; height:16px; border-radius:2px; background:rgba(0,0,0,.4);}
+.trim-handle.left{left:0;}
+.trim-handle.right{right:0;}
+.playhead{position:absolute; top:-4px; bottom:-4px; width:2px; background:#fff; z-index:6; box-shadow:0 0 8px rgba(255,255,255,.6); pointer-events:none;}
+.playhead::before{content:""; position:absolute; top:-4px; right:-4px; width:10px; height:10px; border-radius:50%; background:#fff; box-shadow:0 0 6px rgba(255,255,255,.7);}
+
+.trim-times{display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--text-2); padding:2px 2px 0;}
+
+/* ---------- شريط الأدوات ---------- */
+.toolbar-wrap{padding:0 0 calc(env(safe-area-inset-bottom,0px) + 10px); flex-shrink:0;}
+.toolbar{
+  display:flex; gap:8px; overflow-x:auto; padding:12px 14px; scrollbar-width:none;
+  border-top:1px solid var(--glass-border);
+  background:rgba(10,10,14,.35);
+  -webkit-backdrop-filter:blur(24px) saturate(var(--sat)); backdrop-filter:blur(24px) saturate(var(--sat));
+}
+.toolbar::-webkit-scrollbar{display:none;}
+.tool-btn{
+  flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:6px;
+  width:64px; padding:9px 4px 8px; border-radius:var(--r-md);
+  background:var(--glass-bg); border:1px solid transparent;
+  transition:transform .15s var(--ease), background .15s var(--ease), border-color .15s;
+}
+.tool-btn:active{transform:scale(.92); background:var(--glass-bg-press);}
+.tool-btn.active{background:var(--glass-bg-strong); border-color:rgba(10,132,255,.5);}
+.tool-btn.active .tool-ic{color:var(--accent-blue);}
+.tool-btn[disabled]{opacity:.3; pointer-events:none;}
+.tool-ic{width:20px; height:20px; color:var(--text-1); transition:color .15s;}
+.tool-ic svg{width:100%; height:100%;}
+.tool-label{font-size:10px; font-weight:600; color:var(--text-2); white-space:nowrap;}
+
+/* ==========================================================================
+   الورقة السفلية (Bottom Sheet) — لوحات الأدوات
+   ========================================================================== */
+.sheet-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:40; opacity:0; pointer-events:none; transition:opacity .3s var(--ease);
+}
+.sheet-backdrop.show{opacity:1; pointer-events:auto;}
+.sheet{
+  position:fixed; left:0; right:0; bottom:0; z-index:41;
+  border-radius:26px 26px 0 0; padding:10px 18px calc(env(safe-area-inset-bottom,0px) + 20px);
+  transform:translateY(105%); transition:transform .38s var(--ease);
+  max-height:66vh; overflow-y:auto;
+  background:rgba(16,16,22,.72);
+  -webkit-backdrop-filter:blur(34px) saturate(var(--sat)); backdrop-filter:blur(34px) saturate(var(--sat));
+  border-top:1px solid var(--glass-border);
+}
+.sheet.show{transform:translateY(0);}
+.sheet-grabber{width:36px; height:4px; border-radius:4px; background:rgba(255,255,255,.25); margin:2px auto 14px;}
+.sheet-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+.sheet-head h3{font-size:15.5px; font-weight:700;}
+.sheet-close{width:30px; height:30px; border-radius:50%; background:var(--glass-bg-strong); display:flex; align-items:center; justify-content:center;}
+.sheet-close svg{width:14px; height:14px;}
+
+.field{margin-bottom:18px;}
+.field-label{font-size:12px; font-weight:600; color:var(--text-2); margin-bottom:10px; display:flex; justify-content:space-between;}
+.field-label .val{color:var(--text-1); font-weight:700;}
+
+.slider{
+  width:100%; height:6px; border-radius:6px; background:rgba(255,255,255,.1); outline:none; position:relative;
+}
+.slider::-webkit-slider-thumb{
+  -webkit-appearance:none; width:22px; height:22px; border-radius:50%;
+  background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.4), 0 0 0 4px rgba(10,132,255,.25); cursor:pointer;
+}
+.slider::-moz-range-thumb{width:22px; height:22px; border-radius:50%; background:#fff; border:none; box-shadow:0 3px 8px rgba(0,0,0,.4);}
+
+.seg{display:flex; gap:4px; background:rgba(255,255,255,.06); border-radius:100px; padding:4px;}
+.seg button{flex:1; padding:9px 4px; border-radius:100px; font-size:12.5px; font-weight:700; color:var(--text-2); transition:background .2s, color .2s;}
+.seg button.active{background:var(--accent-blue); color:#fff; box-shadow:0 4px 12px rgba(10,132,255,.4);}
+
+.swatches{display:flex; gap:10px; flex-wrap:wrap;}
+.swatch{width:34px; height:34px; border-radius:50%; border:2px solid transparent; box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);}
+.swatch.active{border-color:#fff; transform:scale(1.1);}
+
+.text-input{
+  width:100%; padding:13px 15px; border-radius:var(--r-md); background:rgba(255,255,255,.07);
+  border:1px solid var(--glass-border); color:var(--text-1); font-size:14px; outline:none;
+}
+.text-input:focus{border-color:var(--accent-blue);}
+
+.filters-row{display:flex; gap:12px; overflow-x:auto; padding:2px 2px 6px; scrollbar-width:none;}
+.filters-row::-webkit-scrollbar{display:none;}
+.filter-chip{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:7px;}
+.filter-thumb{
+  width:58px; height:58px; border-radius:16px; border:2px solid transparent;
+  background:linear-gradient(135deg,#5E5CE6,#0A84FF,#FF9F0A,#FF375F);
+}
+.filter-chip.active .filter-thumb{border-color:var(--accent-blue);}
+.filter-chip span{font-size:10.5px; color:var(--text-2); font-weight:600;}
+
+.pick-row{display:flex; align-items:center; gap:12px; padding:13px; border-radius:var(--r-md); background:rgba(255,255,255,.05); border:1px dashed var(--glass-border); margin-bottom:12px;}
+.pick-row .pick-ic{width:36px; height:36px; border-radius:10px; background:var(--glass-bg-strong); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.pick-row .pick-ic svg{width:17px; height:17px;}
+.pick-row .pick-text{flex:1; min-width:0;}
+.pick-row .pick-text b{font-size:13px; display:block;}
+.pick-row .pick-text span{font-size:11px; color:var(--text-3);}
+
+.layer-list{display:flex; flex-direction:column; gap:8px;}
+.layer-item{display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:var(--r-sm); background:rgba(255,255,255,.05);}
+.layer-item span{flex:1; font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.layer-item button{width:26px; height:26px; border-radius:50%; background:rgba(255,69,58,.15); color:var(--accent-red); display:flex; align-items:center; justify-content:center;}
+.layer-item button svg{width:12px; height:12px;}
+
+.emoji-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:8px;}
+.emoji-cell{font-size:26px; padding:8px 0; border-radius:12px; background:rgba(255,255,255,.05); text-align:center;}
+.emoji-cell:active{background:rgba(255,255,255,.14); transform:scale(.9);}
+
+.aspect-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.aspect-cell{padding:14px 6px; border-radius:var(--r-md); background:rgba(255,255,255,.05); border:1.5px solid transparent; text-align:center;}
+.aspect-cell.active{border-color:var(--accent-blue); background:rgba(10,132,255,.12);}
+.aspect-box{width:26px; height:26px; margin:0 auto 8px; border:2px solid var(--text-2); border-radius:4px;}
+.aspect-cell span{font-size:11.5px; font-weight:700; color:var(--text-2);}
+.aspect-cell.active span{color:var(--text-1);}
+
+.transitions-list{display:flex; flex-direction:column; gap:8px;}
+.transition-item{display:flex; align-items:center; gap:12px; padding:12px; border-radius:var(--r-md); background:rgba(255,255,255,.05); border:1.5px solid transparent;}
+.transition-item.active{border-color:var(--accent-blue); background:rgba(10,132,255,.1);}
+.transition-swatch{width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#5E5CE6,#40C8E0);}
+.transition-item b{font-size:13px; display:block;}
+.transition-item span{font-size:11px; color:var(--text-3);}
+
+.btn-primary-full{
+  width:100%; padding:15px; border-radius:var(--r-md); font-size:14.5px; font-weight:700; color:#fff;
+  background:linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+  box-shadow:0 8px 24px rgba(10,132,255,.35);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn-primary-full:active{transform:scale(.98);}
+.btn-primary-full svg{width:16px; height:16px;}
+
+.quick-action-btn{
+  width:100%; display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:var(--r-md);
+  background:rgba(255,255,255,.05); margin-bottom:8px;
+}
+.quick-action-btn .qi{width:34px; height:34px; border-radius:9px; background:var(--glass-bg-strong); display:flex; align-items:center; justify-content:center;}
+.quick-action-btn .qi svg{width:16px; height:16px;}
+.quick-action-btn b{font-size:13px; font-weight:700; flex:1; text-align:right;}
+.quick-action-btn.danger .qi{background:rgba(255,69,58,.15); color:var(--accent-red);}
+
+/* ==========================================================================
+   نافذة التصدير
+   ========================================================================== */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:60; opacity:0; pointer-events:none;
+  transition:opacity .3s var(--ease); display:flex; align-items:center; justify-content:center; padding:20px;
+}
+.modal-backdrop.show{opacity:1; pointer-events:auto;}
+.export-modal{
+  width:100%; max-width:380px; border-radius:30px; padding:26px 22px calc(env(safe-area-inset-bottom,0px) + 22px);
+  background:rgba(18,18,24,.78);
+  -webkit-backdrop-filter:blur(40px) saturate(var(--sat)); backdrop-filter:blur(40px) saturate(var(--sat));
+  border:1px solid var(--glass-border); box-shadow:var(--shadow-pop);
+  transform:scale(.9) translateY(20px); opacity:0; transition:all .35s var(--ease);
+}
+.modal-backdrop.show .export-modal{transform:scale(1) translateY(0); opacity:1;}
+.export-head{text-align:center; margin-bottom:22px;}
+.export-head h2{font-size:18px; font-weight:800; margin-bottom:4px;}
+.export-head p{font-size:12px; color:var(--text-3);}
+
+.export-view{display:none;}
+.export-view.show{display:block;}
+
+.progress-ring-wrap{display:flex; flex-direction:column; align-items:center; padding:14px 0 22px;}
+.progress-ring-wrap svg{transform:rotate(-90deg);}
+.ring-bg{fill:none; stroke:rgba(255,255,255,.08); stroke-width:9;}
+.ring-fg{fill:none; stroke:url(#ringGrad); stroke-width:9; stroke-linecap:round; transition:stroke-dashoffset .3s var(--ease);}
+.ring-percent{font-size:26px; font-weight:800; margin-top:-92px;}
+.ring-status{font-size:12.5px; color:var(--text-2); margin-top:74px; font-weight:600;}
+
+.result-icon{width:70px; height:70px; border-radius:50%; margin:6px auto 18px; display:flex; align-items:center; justify-content:center;}
+.result-icon.ok{background:rgba(48,209,88,.15); color:var(--accent-green);}
+.result-icon.err{background:rgba(255,69,58,.15); color:var(--accent-red);}
+.result-icon svg{width:32px; height:32px;}
+.result-title{text-align:center; font-size:16px; font-weight:800; margin-bottom:6px;}
+.result-sub{text-align:center; font-size:12px; color:var(--text-3); margin-bottom:22px; word-break:break-all;}
+
+.modal-actions{display:flex; gap:10px;}
+.btn-ghost{
+  flex:1; padding:14px; border-radius:var(--r-md); font-size:13.5px; font-weight:700;
+  background:rgba(255,255,255,.07); border:1px solid var(--glass-border); color:var(--text-1);
+}
+.btn-ghost:active{transform:scale(.96);}
+
+/* ==========================================================================
+   Toast
+   ========================================================================== */
+.toast{
+  position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); z-index:80;
+  padding:11px 20px; border-radius:100px; font-size:12.5px; font-weight:600;
+  background:rgba(24,24,30,.85); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+  border:1px solid var(--glass-border); opacity:0; pointer-events:none; transition:all .3s var(--ease);
+  display:flex; align-items:center; gap:8px; max-width:80vw;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.toast .t-dot{width:7px; height:7px; border-radius:50%; background:var(--accent-green); flex-shrink:0;}
+
+/* Responsive */
+@media (min-width:560px){
+  .app{max-width:460px; margin:0 auto; border-inline:1px solid var(--glass-border);}
+}
+</style>
+</head>
+<body>
+
+<div class="ambient">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
+<div class="app">
+
+  <!-- ============ الشريط العلوي ============ -->
+  <header class="topbar">
+    <button class="icon-btn" id="btnBack" aria-label="رجوع">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l-6 6 6 6"/></svg>
+    </button>
+
+    <div class="project-title-wrap">
+      <input class="project-title" id="projectTitle" value="مشروع بدون عنوان" maxlength="40">
+      <div class="project-sub"><span class="dot sim" id="bridgeDot"></span><span id="bridgeLabel">وضع المعاينة (متصفح)</span></div>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btnUndo" disabled aria-label="تراجع">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 1 2 5"/><path d="M3 4v6h6"/></svg>
+      </button>
+      <button class="icon-btn" id="btnRedo" disabled aria-label="إعادة">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10a7 7 0 1 0-2 5"/><path d="M21 4v6h-6"/></svg>
+      </button>
+      <button class="btn-export" id="btnExport" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>
+        <span>تصدير</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ منطقة المعاينة ============ -->
+  <div class="stage-area">
+    <div class="stage" id="stage">
+      <video id="previewVideo" playsinline muted></video>
+
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M10.5 10.5l4 2-4 2v-4z"/></svg>
+        </div>
+        <h2>ابدأ مشروعك</h2>
+        <p>اختر فيديو من هاتفك لبدء التحرير. يمكنك القص والدمج وإضافة النصوص والموسيقى.</p>
+        <button class="empty-cta" id="btnPickVideoMain">اختيار فيديو</button>
+      </div>
+
+      <div class="stage-overlay-controls">
+        <button class="play-toggle" id="btnPlayToggle">
+          <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5z"/></svg>
+        </button>
+      </div>
+      <div class="stage-time"><span class="ltr" id="timeDisplay">00:00 / 00:00</span></div>
+    </div>
+  </div>
+
+  <!-- ============ الخط الزمني ============ -->
+  <div class="timeline-wrap">
+    <div class="timeline-panel glass">
+      <div class="timeline-ruler"><span>00:00</span><span id="rulerMid">--:--</span><span id="rulerEnd">00:00</span></div>
+
+      <div class="track" id="trackVideo">
+        <div class="track-video-strip"></div>
+        <div class="track-label">فيديو</div>
+        <div class="trim-mask left" id="maskLeft"></div>
+        <div class="trim-mask right" id="maskRight"></div>
+        <div class="playhead" id="playhead" style="left:0%"></div>
+        <div class="trim-handle left" id="handleLeft"></div>
+        <div class="trim-handle right" id="handleRight"></div>
+      </div>
+
+      <div class="track track-audio hidden-track" id="trackAudio">
+        <div class="track-video-strip"></div>
+        <div class="track-label">موسيقى</div>
+      </div>
+
+      <div class="trim-times">
+        <span class="ltr" id="trimStartLabel">00:00</span>
+        <span id="trimDurationLabel" style="color:var(--accent-orange)">المدة: 00:00</span>
+        <span class="ltr" id="trimEndLabel">00:00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ شريط الأدوات ============ -->
+  <div class="toolbar-wrap">
+    <nav class="toolbar" id="toolbar">
+      <!-- سيتم إدراج الأزرار عبر JS -->
+    </nav>
+  </div>
+</div>
+
+<!-- ============ الورقة السفلية ============ -->
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-grabber"></div>
+  <div class="sheet-head">
+    <h3 id="sheetTitle">أداة</h3>
+    <button class="sheet-close" id="sheetClose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+    </button>
+  </div>
+  <div id="sheetBody"></div>
+</div>
+
+<!-- ============ نافذة التصدير ============ -->
+<div class="modal-backdrop" id="exportBackdrop">
+  <div class="export-modal">
+
+    <div class="export-view show" id="exportViewOptions">
+      <div class="export-head"><h2>تصدير الفيديو</h2><p>اختر إعدادات التصدير المناسبة لمشروعك</p></div>
+
+      <div class="field">
+        <div class="field-label">الدقة <span class="val" id="resVal">1080p</span></div>
+        <div class="seg" id="segRes">
+          <button data-v="480p">480p</button>
+          <button data-v="720p">720p</button>
+          <button data-v="1080p" class="active">1080p</button>
+          <button data-v="4k">4K</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">الإطارات (FPS) <span class="val" id="fpsVal">30</span></div>
+        <div class="seg" id="segFps">
+          <button data-v="24">24</button>
+          <button data-v="30" class="active">30</button>
+          <button data-v="60">60</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">الجودة <span class="val" id="qualityVal">عالية</span></div>
+        <div class="seg" id="segQuality">
+          <button data-v="متوسطة">متوسطة</button>
+          <button data-v="عالية" class="active">عالية</button>
+          <button data-v="بدون فقدان">بدون فقدان</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">الصيغة <span class="val" id="formatVal">MP4</span></div>
+        <div class="seg" id="segFormat">
+          <button data-v="MP4" class="active">MP4</button>
+          <button data-v="MOV">MOV</button>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-ghost" id="btnExportCancel">إلغاء</button>
+        <button class="btn-primary-full" id="btnExportStart" style="flex:1.3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>
+          تصدير الآن
+        </button>
+      </div>
+    </div>
+
+    <div class="export-view" id="exportViewProgress">
+      <div class="export-head"><h2>جاري التصدير</h2><p>الرجاء الانتظار، لا تُغلق التطبيق</p></div>
+      <div class="progress-ring-wrap">
+        <svg width="180" height="180" viewBox="0 0 180 180">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0A84FF"/><stop offset="100%" stop-color="#5E5CE6"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="90" cy="90" r="78"/>
+          <circle class="ring-fg" id="ringFg" cx="90" cy="90" r="78" stroke-dasharray="490" stroke-dashoffset="490"/>
+        </svg>
+        <div class="ring-percent"><span class="ltr" id="ringPercent">0%</span></div>
+        <div class="ring-status" id="ringStatus">جاري التحضير…</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="btnExportAbort">إلغاء التصدير</button>
+      </div>
+    </div>
+
+    <div class="export-view" id="exportViewSuccess">
+      <div class="result-icon ok">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"/></svg>
+      </div>
+      <div class="result-title">تم التصدير بنجاح</div>
+      <div class="result-sub" id="resultPath">/storage/movies/export_01.mp4</div>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="btnExportShare">مشاركة</button>
+        <button class="btn-primary-full" id="btnExportDone" style="flex:1.3">تم</button>
+      </div>
+    </div>
+
+    <div class="export-view" id="exportViewError">
+      <div class="result-icon err">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+      </div>
+      <div class="result-title">فشل التصدير</div>
+      <div class="result-sub" id="errorMsg">حدث خطأ غير متوقع أثناء المعالجة</div>
+      <div class="modal-actions">
+        <button class="btn-ghost" id="btnExportErrClose">إغلاق</button>
+        <button class="btn-primary-full" id="btnExportRetry" style="flex:1.3">إعادة المحاولة</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span class="t-dot"></span><span id="toastMsg"></span></div>
+
+<!-- مدخلات ملفات مخفية (تعمل كبديل عند الاختبار في متصفح عادي بدون WebView) -->
+<input type="file" id="fileVideo" accept="video/*" style="display:none">
+<input type="file" id="fileImage" accept="image/*" style="display:none">
+<input type="file" id="fileAudio" accept="audio/*" style="display:none">
+
+<script>
+/* ============================================================================
+   عقد الربط مع Kotlin (Bridge Contract)
+   ============================================================================
+   يتوقع هذا الملف أن يوفّر تطبيق أندرويد كائن اسمه window.AndroidBridge
+   عبر @JavascriptInterface بالدوال التالية (كلها تُستدعى بأنواع بدائية
+   String / Long / Int / Double فقط، والكائنات المعقّدة تُمرَّر كنص JSON):
+
+     openFilePicker(type)                         // type: "video" | "image" | "audio"
+     trimVideo(startMs, endMs)
+     splitClip(atMs)
+     changeSpeed(factor)                          // مثال: 1.5
+     rotateVideo(degrees)                         // 90 / 180 / 270
+     flipVideo(direction)                         // "horizontal" | "vertical"
+     cropVideo(aspect)                            // "1:1" | "16:9" | "9:16" | "4:5" | "free"
+     setFilter(name)                              // اسم الفلتر
+     adjustColor(paramsJson)                      // {"brightness":0,"contrast":0,"saturation":0}
+     addTextLayer(paramsJson)                     // {"id","text","color","size","x","y"}
+     addImageOverlay(paramsJson)                  // {"id","path","x","y"}
+     addAudioTrack(paramsJson)                    // {"id","path","volume"}
+     removeLayer(id)
+     setTransition(name)                          // "fade" | "slide" | "zoom" | "none"
+     undo() / redo()
+     saveProject()
+     exportVideo(optionsJson)                     // {"resolution","fps","quality","format"}
+     cancelExport()
+
+   ويستدعي تطبيق أندرويد (عبر webView.evaluateJavascript) دوال الاستدعاء
+   التالية المُعرَّفة أسفل هذا الملف على window:
+
+     onVideoLoaded(path, durationMs, width, height)
+     onFilePicked(type, path)
+     onOperationComplete(opName, dataJson)
+     onExportProgress(percent, statusText)
+     onExportComplete(outputPath)
+     onExportError(message)
+   ============================================================================ */
+
+(function(){
+  "use strict";
+
+  /* ------------------------------- الحالة ------------------------------- */
+  const state = {
+    videoPath:null, durationMs:0, isPlaying:false,
+    trimStartMs:0, trimEndMs:0,
+    speed:1,
+    filter:"original",
+    brightness:0, contrast:0, saturation:0,
+    rotation:0, flipH:false,
+    aspect:"free",
+    textLayers:[], imageLayers:[], audioTrack:null,
+    transition:"none",
+    history:[], future:[],
+    isExporting:false,
+    layerSeq:1
+  };
+
+  const el = (id)=>document.getElementById(id);
+  const video = el("previewVideo");
+  const stage = el("stage");
+
+  /* ---------------------------- جسر Kotlin ---------------------------- */
+  const hasNative = ()=> typeof window.AndroidBridge !== "undefined";
+
+  const Bridge = {
+    call(fn, ...args){
+      if(hasNative() && typeof window.AndroidBridge[fn] === "function"){
+        try{ return window.AndroidBridge[fn](...args); }
+        catch(e){ console.error("Bridge error:", fn, e); }
+      } else {
+        console.log("[محاكاة Bridge]", fn, args);
+      }
+    },
+    callJson(fn, obj){ return this.call(fn, JSON.stringify(obj)); }
+  };
+
+  function updateBridgeIndicator(){
+    if(hasNative()){
+      el("bridgeDot").classList.remove("sim");
+      el("bridgeLabel").textContent = "متصل بمحرك Kotlin";
+    } else {
+      el("bridgeDot").classList.add("sim");
+      el("bridgeLabel").textContent = "وضع المعاينة (متصفح)";
+    }
+  }
+
+  /* ------------------------------- أدوات ------------------------------- */
+  function fmt(ms){
+    if(!isFinite(ms) || ms<0) ms=0;
+    const s = Math.floor(ms/1000);
+    const m = Math.floor(s/60);
+    const r = s%60;
+    return String(m).padStart(2,"0")+":"+String(r).padStart(2,"0");
+  }
+  function toast(msg){
+    el("toastMsg").textContent = msg;
+    const t = el("toast");
+    t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(()=>t.classList.remove("show"), 2200);
+  }
+  function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms||8); }
+
+  /* ------------------------- تحميل فيديو ------------------------- */
+  function loadVideoFromSrc(src, isBlob){
+    video.src = src;
+    video.onloadedmetadata = ()=>{
+      state.videoPath = src;
+      state.durationMs = video.duration*1000;
+      state.trimStartMs = 0;
+      state.trimEndMs = state.durationMs;
+      stage.classList.add("has-video");
+      el("rulerEnd").textContent = fmt(state.durationMs);
+      el("rulerMid").textContent = fmt(state.durationMs/2);
+      updateTrimUI();
+      enableToolbar(true);
+      pushHistory("تحميل الفيديو");
+      toast("تم تحميل الفيديو");
+    };
+  }
+
+  el("btnPickVideoMain").addEventListener("click", ()=>Bridge_openPicker("video"));
+
+  function Bridge_openPicker(type){
+    if(hasNative()){
+      Bridge.call("openFilePicker", type);
+    } else {
+      // وضع المحاكاة: نفتح منتقي ملفات المتصفح مباشرة
+      if(type==="video") el("fileVideo").click();
+      else if(type==="image") el("fileImage").click();
+      else if(type==="audio") el("fileAudio").click();
+    }
+  }
+
+  el("fileVideo").addEventListener("change", (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    loadVideoFromSrc(URL.createObjectURL(f));
+  });
+  el("fileImage").addEventListener("change", (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    addImageLayer(URL.createObjectURL(f));
+    closeSheet();
+  });
+  el("fileAudio").addEventListener("change", (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    state.audioTrack = {name:f.name, url:URL.createObjectURL(f)};
+    el("trackAudio").classList.remove("hidden-track");
+    toast('تمت إضافة "'+f.name+'"');
+    Bridge.callJson("addAudioTrack", {id:"a"+(state.layerSeq++), path:f.name, volume:1});
+    pushHistory("إضافة موسيقى");
+    closeSheet();
+  });
+
+  // دوال استدعاء يوفّرها Kotlin عند الاستخدام الفعلي داخل WebView
+  window.onFilePicked = function(type, path){
+    if(type==="video") loadVideoFromSrc(path);
+    else if(type==="image") addImageLayer(path);
+    else if(type==="audio"){
+      state.audioTrack = {name:path, url:path};
+      el("trackAudio").classList.remove("hidden-track");
+      toast("تمت إضافة الموسيقى");
+    }
+  };
+  window.onVideoLoaded = function(path, durationMs, width, height){
+    loadVideoFromSrc(path);
+  };
+  window.onOperationComplete = function(opName, dataJson){ toast("تم: "+opName); };
+  window.onExportProgress = function(percent, statusText){ setExportProgress(percent, statusText); };
+  window.onExportComplete = function(outputPath){ showExportSuccess(outputPath); };
+  window.onExportError = function(message){ showExportError(message); };
+
+  /* ------------------------- تشغيل / إيقاف ------------------------- */
+  function updateTimeDisplay(){
+    el("timeDisplay").textContent = fmt(video.currentTime*1000)+" / "+fmt(state.durationMs);
+    const pct = state.durationMs? (video.currentTime*1000/state.durationMs)*100 : 0;
+    el("playhead").style.left = Math.min(100,Math.max(0,pct))+"%";
+  }
+  video.addEventListener("timeupdate", updateTimeDisplay);
+  video.addEventListener("play", ()=>{ state.isPlaying=true; el("playIcon").innerHTML='<rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/>'; });
+  video.addEventListener("pause", ()=>{ state.isPlaying=false; el("playIcon").innerHTML='<path d="M8 5.5v13l11-6.5-11-6.5z"/>'; });
+  video.addEventListener("ended", ()=>{ video.currentTime = state.trimStartMs/1000; video.pause(); });
+
+  el("btnPlayToggle").addEventListener("click", ()=>{
+    if(!state.videoPath) return;
+    if(video.paused){ video.currentTime = Math.max(video.currentTime, state.trimStartMs/1000); video.play(); }
+    else video.pause();
+  });
+  stage.addEventListener("click", (e)=>{
+    if(e.target===el("btnPlayToggle") || e.target.closest("#btnPlayToggle")) return;
+    stage.classList.toggle("show-controls");
+  });
+
+  /* ------------------------- القص (Trim) ------------------------- */
+  function msToPct(ms){ return state.durationMs? (ms/state.durationMs)*100 : 0; }
+  function pctToMs(pct){ return (pct/100)*state.durationMs; }
+
+  function updateTrimUI(){
+    const startPct = msToPct(state.trimStartMs);
+    const endPct = msToPct(state.trimEndMs);
+    el("maskLeft").style.width = startPct+"%";
+    el("maskRight").style.width = (100-endPct)+"%";
+    el("handleLeft").style.left = "calc("+startPct+"% - 8px)";
+    el("handleRight").style.left = "calc("+endPct+"% - 8px)";
+    el("trimStartLabel").textContent = fmt(state.trimStartMs);
+    el("trimEndLabel").textContent = fmt(state.trimEndMs);
+    el("trimDurationLabel").textContent = "المدة: "+fmt(state.trimEndMs-state.trimStartMs);
+  }
+
+  function makeDraggable(handleEl, onMove){
+    handleEl.addEventListener("pointerdown", (e)=>{
+      e.stopPropagation();
+      handleEl.setPointerCapture(e.pointerId);
+      const track = el("trackVideo");
+      function move(ev){
+        const rect = track.getBoundingClientRect();
+        let pct = ((ev.clientX-rect.left)/rect.width)*100;
+        pct = Math.min(100, Math.max(0, pct));
+        onMove(pct);
+      }
+      function up(ev){
+        handleEl.releasePointerCapture(e.pointerId);
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      }
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+  }
+  makeDraggable(el("handleLeft"), (pct)=>{
+    const ms = pctToMs(pct);
+    if(ms < state.trimEndMs-500){ state.trimStartMs = ms; updateTrimUI(); video.currentTime = ms/1000; }
+  });
+  makeDraggable(el("handleRight"), (pct)=>{
+    const ms = pctToMs(pct);
+    if(ms > state.trimStartMs+500){ state.trimEndMs = ms; updateTrimUI(); video.currentTime = ms/1000; }
+  });
+  makeDraggable(el("playhead"), (pct)=>{
+    video.currentTime = pctToMs(pct)/1000;
+  });
+
+  /* ------------------------- شريط الأدوات ------------------------- */
+  const TOOLS = [
+    {id:"trim", label:"قص", ic:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 8.5L19 19"/><path d="M8.5 15.5L19 5"/>'},
+    {id:"split", label:"تقسيم", ic:'<path d="M6 3v5a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V3"/><path d="M12 11v10"/>'},
+    {id:"speed", label:"السرعة", ic:'<path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z"/>'},
+    {id:"image", label:"صورة", ic:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.7"/><path d="M21 15l-5-5-9 9"/>'},
+    {id:"audio", label:"موسيقى", ic:'<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>'},
+    {id:"text", label:"نص", ic:'<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>'},
+    {id:"stickers", label:"ملصقات", ic:'<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9-6.2-3.3-6.2 3.3 1.2-6.9-5-4.9 6.9-1z"/>'},
+    {id:"filters", label:"فلاتر", ic:'<line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2"/>'},
+    {id:"color", label:"الألوان", ic:'<path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13z"/>'},
+    {id:"crop", label:"اقتصاص", ic:'<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>'},
+    {id:"rotate", label:"تدوير", ic:'<path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/>'},
+    {id:"flip", label:"قلب", ic:'<path d="M12 3v18"/><path d="M16 8l4 4-4 4"/><path d="M8 8l-4 4 4 4"/>'},
+    {id:"transitions", label:"انتقالات", ic:'<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>'},
+    {id:"layers", label:"الطبقات", ic:'<polygon points="12 2 2 8 12 14 22 8 12 2"/><polyline points="2 14 12 20 22 14"/>'}
+  ];
+
+  const toolbar = el("toolbar");
+  TOOLS.forEach(t=>{
+    const b = document.createElement("button");
+    b.className = "tool-btn"; b.dataset.tool = t.id;
+    if(t.id!=="layers") b.disabled = true; // تُفعَّل بعد تحميل الفيديو
+    b.innerHTML = '<span class="tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+t.ic+'</svg></span><span class="tool-label">'+t.label+'</span>';
+    b.addEventListener("click", ()=>onToolClick(t.id, b));
+    toolbar.appendChild(b);
+  });
+
+  function enableToolbar(on){
+    document.querySelectorAll(".tool-btn").forEach(b=>b.disabled=!on);
+    el("btnExport").disabled = !on;
+  }
+
+  function setActiveTool(id){
+    document.querySelectorAll(".tool-btn").forEach(b=>b.classList.toggle("active", b.dataset.tool===id));
+  }
+
+  function onToolClick(id, btn){
+    vibrate();
+    setActiveTool(id);
+    switch(id){
+      case "trim": openSheet("قص الفيديو", panelTrim()); break;
+      case "split":
+        Bridge.call("splitClip", Math.round(video.currentTime*1000));
+        toast("تم تقسيم المقطع عند "+fmt(video.currentTime*1000));
+        pushHistory("تقسيم");
+        setActiveTool(null);
+        break;
+      case "speed": openSheet("سرعة التشغيل", panelSpeed()); break;
+      case "image": openSheet("إضافة صورة", panelImage()); break;
+      case "audio": openSheet("إضافة موسيقى", panelAudio()); break;
+      case "text": openSheet("إضافة نص", panelText()); break;
+      case "stickers": openSheet("الملصقات", panelStickers()); break;
+      case "filters": openSheet("الفلاتر", panelFilters()); break;
+      case "color": openSheet("ضبط الألوان", panelColor()); break;
+      case "crop": openSheet("الاقتصاص ونسبة العرض", panelCrop()); break;
+      case "rotate":
+        state.rotation = (state.rotation+90)%360;
+        applyVideoTransform();
+        Bridge.call("rotateVideo", 90);
+        toast("تم التدوير");
+        pushHistory("تدوير");
+        setActiveTool(null);
+        break;
+      case "flip":
+        state.flipH = !state.flipH;
+        applyVideoTransform();
+        Bridge.call("flipVideo","horizontal");
+        toast("تم القلب أفقياً");
+        pushHistory("قلب");
+        setActiveTool(null);
+        break;
+      case "transitions": openSheet("الانتقالات", panelTransitions()); break;
+      case "layers": openSheet("إدارة الطبقات", panelLayers()); break;
+    }
+  }
+
+  function applyVideoTransform(){
+    video.style.transform = "rotate("+state.rotation+"deg) scaleX("+(state.flipH?-1:1)+")";
+  }
+  function applyVideoFilterCSS(){
+    video.style.filter = "brightness("+(1+state.brightness/100)+") contrast("+(1+state.contrast/100)+") saturate("+(1+state.saturation/100)+")";
+  }
+
+  /* ------------------------- الورقة السفلية ------------------------- */
+  const sheet = el("sheet"), sheetBackdrop = el("sheetBackdrop");
+  function openSheet(title, bodyHtml){
+    el("sheetTitle").textContent = title;
+    el("sheetBody").innerHTML = bodyHtml;
+    sheet.classList.add("show"); sheetBackdrop.classList.add("show");
+    bindSheetEvents();
+  }
+  function closeSheet(){
+    sheet.classList.remove("show"); sheetBackdrop.classList.remove("show");
+    setActiveTool(null);
+  }
+  el("sheetClose").addEventListener("click", closeSheet);
+  sheetBackdrop.addEventListener("click", closeSheet);
+
+  /* -- لوحات الأدوات (تُبنى كنص HTML) -- */
+  function panelTrim(){
+    return `
+      <p style="font-size:12.5px; color:var(--text-2); line-height:1.7; margin-bottom:16px;">
+        اسحب المقابض البرتقالية على الخط الزمني لتحديد بداية ونهاية المقطع، ثم اضغط "تطبيق القص".
+      </p>
+      <button class="btn-primary-full" id="applyTrim">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 6"/></svg>
+        تطبيق القص
+      </button>`;
+  }
+  function panelSpeed(){
+    return `
+      <div class="field">
+        <div class="field-label">السرعة <span class="val ltr" id="speedLbl">${state.speed.toFixed(2)}x</span></div>
+        <input type="range" class="slider" id="speedSlider" min="0.25" max="4" step="0.25" value="${state.speed}">
+      </div>
+      <div class="seg" style="margin-bottom:18px;">
+        <button data-sp="0.5">0.5x</button><button data-sp="1">1x</button><button data-sp="1.5">1.5x</button><button data-sp="2">2x</button>
+      </div>
+      <button class="btn-primary-full" id="applySpeed">تطبيق السرعة</button>`;
+  }
+  function panelImage(){
+    return `
+      <div class="pick-row" id="pickImageRow">
+        <div class="pick-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.7"/><path d="M21 15l-5-5-9 9"/></svg></div>
+        <div class="pick-text"><b>اختيار صورة</b><span>PNG، JPG — ستُضاف كطبقة فوق الفيديو</span></div>
+      </div>
+      <p style="font-size:11.5px; color:var(--text-3); line-height:1.7;">بعد الإضافة يمكنك سحب الصورة على الشاشة لتغيير موضعها.</p>`;
+  }
+  function panelAudio(){
+    return `
+      <div class="pick-row" id="pickAudioRow">
+        <div class="pick-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></div>
+        <div class="pick-text"><b>اختيار مقطع صوتي</b><span>MP3، AAC — سيُضاف كموسيقى خلفية</span></div>
+      </div>
+      ${state.audioTrack? `<div class="field"><div class="field-label">مستوى الصوت <span class="val" id="volVal">100%</span></div><input type="range" class="slider" id="volSlider" min="0" max="100" value="100"></div>` : ""}`;
+  }
+  function panelText(){
+    return `
+      <div class="field"><input class="text-input" id="textInput" placeholder="اكتب النص هنا…" maxlength="60"></div>
+      <div class="field">
+        <div class="field-label">اللون</div>
+        <div class="swatches">
+          ${["#FFFFFF","#0A84FF","#FF9F0A","#FF375F","#30D158","#5E5CE6","#000000"].map((c,i)=>`<button class="swatch ${i===0?'active':''}" data-color="${c}" style="background:${c}"></button>`).join("")}
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label">حجم الخط <span class="val ltr" id="fsLbl">28px</span></div>
+        <input type="range" class="slider" id="fontSizeSlider" min="14" max="64" value="28">
+      </div>
+      <button class="btn-primary-full" id="applyText">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+        إضافة النص
+      </button>`;
+  }
+  function panelStickers(){
+    const emojis = ["😀","🔥","❤️","⭐","🎉","👍","🎬","✨","😎","💯","🎵","🌟","👏","🥳","😍","💥","🚀","🌈"];
+    return `<div class="emoji-grid">${emojis.map(e=>`<button class="emoji-cell" data-emoji="${e}">${e}</button>`).join("")}</div>`;
+  }
+  function panelFilters(){
+    const filters = [
+      {id:"original", name:"الأصلي"}, {id:"vivid", name:"حيوي"}, {id:"bw", name:"أبيض وأسود"},
+      {id:"cool", name:"بارد"}, {id:"warm", name:"دافئ"}, {id:"cinema", name:"سينمائي"}, {id:"vintage", name:"قديم"}
+    ];
+    return `<div class="filters-row">${filters.map(f=>`
+      <div class="filter-chip ${state.filter===f.id?'active':''}" data-filter="${f.id}">
+        <div class="filter-thumb"></div><span>${f.name}</span>
+      </div>`).join("")}</div>`;
+  }
+  function panelColor(){
+    return `
+      <div class="field"><div class="field-label">السطوع <span class="val" id="brVal">${state.brightness}</span></div><input type="range" class="slider" id="brSlider" min="-100" max="100" value="${state.brightness}"></div>
+      <div class="field"><div class="field-label">التباين <span class="val" id="ctVal">${state.contrast}</span></div><input type="range" class="slider" id="ctSlider" min="-100" max="100" value="${state.contrast}"></div>
+      <div class="field"><div class="field-label">التشبع <span class="val" id="stVal">${state.saturation}</span></div><input type="range" class="slider" id="stSlider" min="-100" max="100" value="${state.saturation}"></div>
+      <button class="btn-primary-full" id="applyColor">تطبيق</button>`;
+  }
+  function panelCrop(){
+    const ratios = [{v:"free",l:"حر"},{v:"1:1",l:"1:1"},{v:"16:9",l:"16:9"},{v:"9:16",l:"9:16"},{v:"4:5",l:"4:5"},{v:"4:3",l:"4:3"}];
+    return `<div class="aspect-grid">${ratios.map(r=>`
+      <button class="aspect-cell ${state.aspect===r.v?'active':''}" data-aspect="${r.v}"><div class="aspect-box"></div><span>${r.l}</span></button>`).join("")}</div>`;
+  }
+  function panelTransitions(){
+    const list = [
+      {id:"none", name:"بدون", d:"قطع مباشر بين المقاطع"},
+      {id:"fade", name:"تلاشي", d:"تلاشي ناعم بين المقطعين"},
+      {id:"slide", name:"انزلاق", d:"انزلاق أفقي سلس"},
+      {id:"zoom", name:"تكبير", d:"تكبير تدريجي عند الانتقال"}
+    ];
+    return `<div class="transitions-list">${list.map(t=>`
+      <div class="transition-item ${state.transition===t.id?'active':''}" data-trans="${t.id}">
+        <div class="transition-swatch"></div><div><b>${t.name}</b><span>${t.d}</span></div>
+      </div>`).join("")}</div>`;
+  }
+  function panelLayers(){
+    const items = [...state.textLayers, ...state.imageLayers];
+    if(!items.length) return `<p style="font-size:12.5px; color:var(--text-3); text-align:center; padding:20px 0;">لا توجد طبقات مضافة بعد.</p>`;
+    return `<div class="layer-list">${items.map(l=>`
+      <div class="layer-item">
+        <span>${l.type==='text' ? '📝 '+l.text : (l.isEmoji? '🙂 ملصق' : '🖼 صورة')}</span>
+        <button data-remove="${l.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg></button>
+      </div>`).join("")}</div>`;
+  }
+
+  /* -- ربط أحداث محتوى الورقة ديناميكياً -- */
+  function bindSheetEvents(){
+    // قص
+    const applyTrim = el("applyTrim");
+    if(applyTrim) applyTrim.addEventListener("click", ()=>{
+      Bridge.call("trimVideo", Math.round(state.trimStartMs), Math.round(state.trimEndMs));
+      toast("تم تطبيق القص");
+      pushHistory("قص"); closeSheet();
+    });
+
+    // السرعة
+    const speedSlider = el("speedSlider");
+    if(speedSlider) speedSlider.addEventListener("input", (e)=>{
+      state.speed = parseFloat(e.target.value);
+      el("speedLbl").textContent = state.speed.toFixed(2)+"x";
+      video.playbackRate = state.speed;
+    });
+    document.querySelectorAll("[data-sp]").forEach(b=>b.addEventListener("click",()=>{
+      state.speed = parseFloat(b.dataset.sp);
+      video.playbackRate = state.speed;
+      if(speedSlider){ speedSlider.value = state.speed; el("speedLbl").textContent = state.speed.toFixed(2)+"x"; }
+    }));
+    const applySpeed = el("applySpeed");
+    if(applySpeed) applySpeed.addEventListener("click", ()=>{
+      Bridge.call("changeSpeed", state.speed);
+      toast("تم ضبط السرعة إلى "+state.speed+"x");
+      pushHistory("سرعة"); closeSheet();
+    });
+
+    // صورة
+    const pickImageRow = el("pickImageRow");
+    if(pickImageRow) pickImageRow.addEventListener("click", ()=>Bridge_openPicker("image"));
+
+    // موسيقى
+    const pickAudioRow = el("pickAudioRow");
+    if(pickAudioRow) pickAudioRow.addEventListener("click", ()=>Bridge_openPicker("audio"));
+    const volSlider = el("volSlider");
+    if(volSlider) volSlider.addEventListener("input", (e)=>{ el("volVal").textContent = e.target.value+"%"; });
+
+    // نص
+    let textColor = "#FFFFFF", fontSize = 28;
+    document.querySelectorAll(".swatch").forEach(s=>s.addEventListener("click", ()=>{
+      document.querySelectorAll(".swatch").forEach(x=>x.classList.remove("active"));
+      s.classList.add("active"); textColor = s.dataset.color;
+    }));
+    const fontSizeSlider = el("fontSizeSlider");
+    if(fontSizeSlider) fontSizeSlider.addEventListener("input",(e)=>{ fontSize=e.target.value; el("fsLbl").textContent=fontSize+"px"; });
+    const applyText = el("applyText");
+    if(applyText) applyText.addEventListener("click", ()=>{
+      const txt = el("textInput").value.trim();
+      if(!txt){ toast("اكتب نصاً أولاً"); return; }
+      addTextLayer(txt, textColor, fontSize);
+      closeSheet();
+    });
+
+    // ملصقات
+    document.querySelectorAll("[data-emoji]").forEach(b=>b.addEventListener("click", ()=>{
+      addTextLayer(b.dataset.emoji, "#fff", 40, true);
+      closeSheet();
+    }));
+
+    // فلاتر
+    document.querySelectorAll("[data-filter]").forEach(c=>c.addEventListener("click", ()=>{
+      document.querySelectorAll("[data-filter]").forEach(x=>x.classList.remove("active"));
+      c.classList.add("active");
+      state.filter = c.dataset.filter;
+      const map = {original:"none", vivid:"saturate(1.6) contrast(1.1)", bw:"grayscale(1)", cool:"hue-rotate(15deg) saturate(1.2)", warm:"sepia(.25) saturate(1.3)", cinema:"contrast(1.15) saturate(.9) brightness(.95)", vintage:"sepia(.4) contrast(.9)"};
+      video.style.filter = map[state.filter] || "none";
+      Bridge.call("setFilter", state.filter);
+      toast("تم تطبيق الفلتر");
+      pushHistory("فلتر");
+    }));
+
+    // الألوان
+    const brSlider=el("brSlider"), ctSlider=el("ctSlider"), stSlider=el("stSlider");
+    if(brSlider) brSlider.addEventListener("input",(e)=>{ state.brightness=+e.target.value; el("brVal").textContent=state.brightness; applyVideoFilterCSS(); });
+    if(ctSlider) ctSlider.addEventListener("input",(e)=>{ state.contrast=+e.target.value; el("ctVal").textContent=state.contrast; applyVideoFilterCSS(); });
+    if(stSlider) stSlider.addEventListener("input",(e)=>{ state.saturation=+e.target.value; el("stVal").textContent=state.saturation; applyVideoFilterCSS(); });
+    const applyColor = el("applyColor");
+    if(applyColor) applyColor.addEventListener("click", ()=>{
+      Bridge.callJson("adjustColor", {brightness:state.brightness, contrast:state.contrast, saturation:state.saturation});
+      toast("تم تطبيق ضبط الألوان");
+      pushHistory("ألوان"); closeSheet();
+    });
+
+    // الاقتصاص
+    document.querySelectorAll("[data-aspect]").forEach(c=>c.addEventListener("click", ()=>{
+      document.querySelectorAll("[data-aspect]").forEach(x=>x.classList.remove("active"));
+      c.classList.add("active");
+      state.aspect = c.dataset.aspect;
+      Bridge.call("cropVideo", state.aspect);
+      toast("تم ضبط نسبة العرض");
+      pushHistory("اقتصاص"); closeSheet();
+    }));
+
+    // الانتقالات
+    document.querySelectorAll("[data-trans]").forEach(c=>c.addEventListener("click", ()=>{
+      document.querySelectorAll("[data-trans]").forEach(x=>x.classList.remove("active"));
+      c.classList.add("active");
+      state.transition = c.dataset.trans;
+      Bridge.call("setTransition", state.transition);
+      toast("تم اختيار الانتقال");
+      pushHistory("انتقال"); closeSheet();
+    }));
+
+    // الطبقات
+    document.querySelectorAll("[data-remove]").forEach(b=>b.addEventListener("click", ()=>{
+      removeLayer(b.dataset.remove);
+      openSheet("إدارة الطبقات", panelLayers());
+    }));
+  }
+
+  /* ------------------------- الطبقات (نص/صور/ملصقات) ------------------------- */
+  function addTextLayer(text, color, size, isEmoji){
+    const id = "t"+(state.layerSeq++);
+    const layerData = {id, type:"text", text, color, size, isEmoji, x:50, y:50};
+    state.textLayers.push(layerData);
+
+    const d = document.createElement("div");
+    d.className = "layer-el "+(isEmoji?"emoji-layer":"text-layer");
+    d.style.left = "40%"; d.style.top = "42%";
+    d.style.color = color; if(!isEmoji) d.style.fontSize = size+"px";
+    d.textContent = text; d.dataset.id = id;
+    makeLayerDraggable(d);
+    stage.appendChild(d);
+
+    Bridge.callJson("addTextLayer", {id, text, color, size, x:0.4, y:0.42});
+    toast(isEmoji? "تمت إضافة الملصق" : "تمت إضافة النص");
+    pushHistory("نص/ملصق");
+  }
+  function addImageLayer(src){
+    const id = "img"+(state.layerSeq++);
+    state.imageLayers.push({id, type:"image", src, x:50, y:50});
+    const d = document.createElement("div");
+    d.className = "layer-el image-layer";
+    d.style.left = "35%"; d.style.top = "35%";
+    d.dataset.id = id;
+    d.innerHTML = '<img src="'+src+'">';
+    makeLayerDraggable(d);
+    stage.appendChild(d);
+    Bridge.callJson("addImageOverlay", {id, path:src, x:0.35, y:0.35});
+    toast("تمت إضافة الصورة");
+    pushHistory("صورة");
+  }
+  function removeLayer(id){
+    state.textLayers = state.textLayers.filter(l=>l.id!==id);
+    state.imageLayers = state.imageLayers.filter(l=>l.id!==id);
+    const node = stage.querySelector('[data-id="'+id+'"]');
+    if(node) node.remove();
+    Bridge.call("removeLayer", id);
+    toast("تم حذف الطبقة");
+    pushHistory("حذف طبقة");
+  }
+  function makeLayerDraggable(node){
+    node.addEventListener("pointerdown",(e)=>{
+      e.stopPropagation();
+      document.querySelectorAll(".layer-el").forEach(x=>x.classList.remove("selected"));
+      node.classList.add("selected");
+      node.setPointerCapture(e.pointerId);
+      const rect = stage.getBoundingClientRect();
+      function move(ev){
+        let x = ((ev.clientX-rect.left)/rect.width)*100;
+        let y = ((ev.clientY-rect.top)/rect.height)*100;
+        x = Math.min(92,Math.max(0,x)); y = Math.min(92,Math.max(0,y));
+        node.style.left = x+"%"; node.style.top = y+"%";
+      }
+      function up(){
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      }
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    });
+  }
+
+  /* ------------------------- تراجع / إعادة ------------------------- */
+  function snapshot(){
+    return JSON.stringify({
+      trimStartMs:state.trimStartMs, trimEndMs:state.trimEndMs, speed:state.speed,
+      filter:state.filter, brightness:state.brightness, contrast:state.contrast, saturation:state.saturation,
+      rotation:state.rotation, flipH:state.flipH, aspect:state.aspect, transition:state.transition
+    });
+  }
+  function pushHistory(label){
+    state.history.push({label, snap:snapshot()});
+    state.future = [];
+    el("btnUndo").disabled = state.history.length<2;
+    el("btnRedo").disabled = true;
+  }
+  function restoreSnap(snapStr){
+    const s = JSON.parse(snapStr);
+    Object.assign(state, s);
+    updateTrimUI(); applyVideoTransform(); applyVideoFilterCSS();
+    video.playbackRate = state.speed;
+  }
+  el("btnUndo").addEventListener("click", ()=>{
+    if(state.history.length<2) return;
+    const last = state.history.pop();
+    state.future.push(last);
+    restoreSnap(state.history[state.history.length-1].snap);
+    Bridge.call("undo");
+    el("btnRedo").disabled = false;
+    el("btnUndo").disabled = state.history.length<2;
+    toast("تراجع");
+  });
+  el("btnRedo").addEventListener("click", ()=>{
+    if(!state.future.length) return;
+    const item = state.future.pop();
+    state.history.push(item);
+    restoreSnap(item.snap);
+    Bridge.call("redo");
+    el("btnUndo").disabled = false;
+    el("btnRedo").disabled = state.future.length===0;
+    toast("إعادة");
+  });
+
+  /* ------------------------- التصدير ------------------------- */
+  const exportBackdrop = el("exportBackdrop");
+  const exportOpts = {resolution:"1080p", fps:30, quality:"عالية", format:"MP4"};
+
+  function bindSeg(segId, key, formatterId){
+    document.getElementById(segId).querySelectorAll("button").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        document.getElementById(segId).querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+        b.classList.add("active");
+        exportOpts[key] = b.dataset.v;
+        el(formatterId).textContent = b.dataset.v;
+      });
+    });
+  }
+  bindSeg("segRes","resolution","resVal");
+  bindSeg("segFps","fps","fpsVal");
+  bindSeg("segQuality","quality","qualityVal");
+  bindSeg("segFormat","format","formatVal");
+
+  function showExportView(id){
+    ["exportViewOptions","exportViewProgress","exportViewSuccess","exportViewError"].forEach(v=>{
+      el(v).classList.toggle("show", v===id);
+    });
+  }
+  function openExportModal(){
+    if(!state.videoPath){ toast("اختر فيديو أولاً"); return; }
+    showExportView("exportViewOptions");
+    exportBackdrop.classList.add("show");
+  }
+  function closeExportModal(){ exportBackdrop.classList.remove("show"); }
+
+  el("btnExport").addEventListener("click", openExportModal);
+  el("btnExportCancel").addEventListener("click", closeExportModal);
+  exportBackdrop.addEventListener("click",(e)=>{ if(e.target===exportBackdrop && !state.isExporting) closeExportModal(); });
+
+  let simTimer=null;
+  el("btnExportStart").addEventListener("click", ()=>{
+    showExportView("exportViewProgress");
+    state.isExporting = true;
+    setExportProgress(0,"جاري التحضير…");
+    Bridge.callJson("exportVideo", exportOpts);
+
+    if(!hasNative()){
+      // محاكاة تقدّم التصدير للمعاينة داخل المتصفح
+      let p=0;
+      const stages = ["جاري التحضير…","جاري قراءة المقاطع…","جاري تطبيق التأثيرات…","جاري الترميز (Encoding)…","جاري الحفظ…"];
+      clearInterval(simTimer);
+      simTimer = setInterval(()=>{
+        p += Math.random()*9+3;
+        if(p>=100){ p=100; clearInterval(simTimer); setExportProgress(100,"اكتمل"); setTimeout(()=>showExportSuccess("/storage/emulated/0/Movies/MEdit/export_"+Date.now()+".mp4"),400); return; }
+        const stageIdx = Math.min(stages.length-1, Math.floor(p/100*stages.length));
+        setExportProgress(p, stages[stageIdx]);
+      }, 420);
+    }
+  });
+
+  function setExportProgress(percent, statusText){
+    percent = Math.max(0, Math.min(100, percent));
+    const circumference = 2*Math.PI*78;
+    el("ringFg").style.strokeDasharray = circumference;
+    el("ringFg").style.strokeDashoffset = circumference - (percent/100)*circumference;
+    el("ringPercent").textContent = Math.round(percent)+"%";
+    if(statusText) el("ringStatus").textContent = statusText;
+  }
+  function showExportSuccess(path){
+    state.isExporting = false;
+    el("resultPath").textContent = path;
+    showExportView("exportViewSuccess");
+    vibrate(15);
+  }
+  function showExportError(message){
+    state.isExporting = false;
+    el("errorMsg").textContent = message || "حدث خطأ غير متوقع أثناء المعالجة";
+    showExportView("exportViewError");
+  }
+  el("btnExportAbort").addEventListener("click", ()=>{
+    clearInterval(simTimer);
+    state.isExporting = false;
+    Bridge.call("cancelExport");
+    closeExportModal();
+    toast("تم إلغاء التصدير");
+  });
+  el("btnExportDone").addEventListener("click", closeExportModal);
+  el("btnExportErrClose").addEventListener("click", closeExportModal);
+  el("btnExportRetry").addEventListener("click", ()=>showExportView("exportViewOptions"));
+  el("btnExportShare").addEventListener("click", ()=>{ Bridge.call("shareExport"); toast("جاري فتح المشاركة…"); });
+
+  /* ------------------------- الرجوع ------------------------- */
+  el("btnBack").addEventListener("click", ()=>{
+    Bridge.call("goBack");
+    toast("رجوع");
+  });
+
+  /* ------------------------- تهيئة ------------------------- */
+  updateBridgeIndicator();
+  pushHistory("بداية");
+  el("btnUndo").disabled = true;
+
+})();
+</script>
+</body>
+</html>
