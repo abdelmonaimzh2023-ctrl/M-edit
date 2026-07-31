@@ -54,7 +54,6 @@ class ProjectsActivity : AppCompatActivity() {
     }
 
     private fun createNewProject() {
-        // في البداية نختار فيديو بسيطاً، لاحقاً سنضيف نافذة مخصصة
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "video/*"
