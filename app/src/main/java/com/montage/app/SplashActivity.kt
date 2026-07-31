@@ -1,9 +1,5 @@
 package com.montage.app
 
-import android.animation.Animator
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -27,7 +23,6 @@ class SplashActivity : AppCompatActivity() {
         // 1. دوران الشعار مع ظهور
         val rotate = AnimationUtils.loadAnimation(this, R.anim.rotate_360)
         val scaleUp = AnimationUtils.loadAnimation(this, R.anim.scale_up)
-
         logoContainer.startAnimation(scaleUp)
         logoIcon.startAnimation(rotate)
 
@@ -47,15 +42,9 @@ class SplashActivity : AppCompatActivity() {
             subtitleText.startAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_up_fade))
         }, 1200)
 
-        // 4. شريط تقدم متحرك
+        // 4. شريط تقدم
         progressBar.postDelayed({
             progressBar.visibility = View.VISIBLE
-            val animator = ValueAnimator.ofInt(0, 100)
-            animator.duration = 1800
-            animator.addUpdateListener { animation ->
-                progressBar.progress = animation.animatedValue as Int
-            }
-            animator.start()
         }, 1500)
 
         // 5. الانتقال بعد 3.5 ثانية

@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
             selectedVideoUri?.let {
                 videoView.start()
                 showSnackbar("تم التشغيل", "#4CAF50")
-            } ?: showSnackbar("الرجاء اختيار فيديو أولاً", "#FF9800")
+            } ?: showSnackbar("الرجاء اختيار فيديو", "#FF9800")
         }
 
         // زر الإيقاف
@@ -60,10 +60,10 @@ class MainActivity : AppCompatActivity() {
                 showLoading("جاري معالجة الفيديو...")
                 Handler(Looper.getMainLooper()).postDelayed({
                     hideLoading()
-                    showSnackbar("جاهز للتصدير بدقة 4K", "#4CAF50")
+                    showSnackbar("جاهز للتصدير 4K", "#4CAF50")
                 }, 3000)
             } else {
-                showSnackbar("الرجاء اختيار فيديو أولاً", "#FF9800")
+                showSnackbar("الرجاء اختيار فيديو", "#FF9800")
             }
         }
     }
@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity() {
                 selectedVideoUri = uri
                 videoView.setVideoURI(uri)
                 videoView.start()
-                showSnackbar("تم تحميل الفيديو بنجاح", "#4CAF50")
+                showSnackbar("تم تحميل الفيديو", "#4CAF50")
             }
         }
     }
