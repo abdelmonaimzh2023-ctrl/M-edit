@@ -5,101 +5,53 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMuxer
 import android.net.Uri
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.ByteBuffer
 
-data class ClipSegment(
-    val uri: Uri,
-    val startMs: Long,
-    val endMs: Long
-)
-
 object VideoClipper {
-
-    suspend fun mergeClips(
-        context: Context,
-        clips: List<ClipSegment>,
-        outputFile: File,
-        onProgress: (Int) -> Unit
-    ): Boolean = withContext(Dispatchers.IO) {
-        if (clips.isEmpty()) return@withContext false
-
-        val muxer = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-        var muxerStarted = false
-        val trackMap = mutableMapOf<Int, Int>() // oldTrackIndex -> newTrackIndex
-        var baseTimeUs = 0L
-
+    suspend fun trimVideo(context: Context, inputUri: Uri, outputFile: File, startMs: Long, endMs: Long): Boolean {
+        val extractor = MediaExtractor()
         try {
-            for ((index, clip) in clips.withIndex()) {
-                val extractor = MediaExtractor()
-                context.contentResolver.openFileDescriptor(clip.uri, "r")?.use { fd ->
-                    extractor.setDataSource(fd.fileDescriptor)
-                } ?: continue
+            context.contentResolver.openFileDescriptor(inputUri, "r")?.use { fd ->
+                extractor.setDataSource(fd.fileDescriptor)
+            } ?: return false
 
-                // اختيار المسارات
-                val tracks = mutableListOf<Int>()
-                for (i in 0 until extractor.trackCount) {
-                    val format = extractor.getTrackFormat(i)
-                    val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
-                    if (mime.startsWith("video/") || mime.startsWith("audio/")) {
-                        extractor.selectTrack(i)
-                        tracks.add(i)
-                    }
+            val muxer = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+            val trackMap = mutableMapOf<Int, Int>()
+
+            for (i in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(i)
+                if (format.getString(MediaFormat.KEY_MIME)?.contains("video") == true ||
+                    format.getString(MediaFormat.KEY_MIME)?.contains("audio") == true) {
+                    extractor.selectTrack(i)
+                    trackMap[i] = muxer.addTrack(format)
                 }
+            }
+            extractor.seekTo(startMs * 1000, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+            muxer.start()
 
-                extractor.seekTo(clip.startMs * 1000, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+            val buffer = ByteBuffer.allocate(1024 * 1024)
+            val info = android.media.MediaCodec.BufferInfo()
+            while (true) {
+                info.size = extractor.readSampleData(buffer, 0)
+                if (info.size < 0) break
+                val sampleTimeMs = extractor.sampleTime / 1000
+                if (sampleTimeMs > endMs) break
 
-                if (!muxerStarted) {
-                    for (trackIndex in tracks) {
-                        val format = extractor.getTrackFormat(trackIndex)
-                        val newIndex = muxer.addTrack(format)
-                        trackMap[trackIndex] = newIndex
-                    }
-                    muxer.start()
-                    muxerStarted = true
-                }
-
-                val buffer = ByteBuffer.allocate(512 * 1024)
-                val bufferInfo = android.media.MediaCodec.BufferInfo()
-
-                while (true) {
-                    bufferInfo.offset = 0
-                    bufferInfo.size = extractor.readSampleData(buffer, 0)
-
-                    if (bufferInfo.size < 0) break
-
-                    val currentTimeMs = extractor.sampleTime / 1000
-                    if (currentTimeMs > clip.endMs) break
-
-                    val trackIndex = extractor.sampleTrackIndex
-                    val newTrackIndex = trackMap[trackIndex] ?: continue
-
-                    bufferInfo.presentationTimeUs = extractor.sampleTime - (clip.startMs * 1000) + baseTimeUs
-                    bufferInfo.flags = extractor.sampleFlags
-
-                    muxer.writeSampleData(newTrackIndex, buffer, bufferInfo)
-                    extractor.advance()
-                }
-
-                // تحديث الوقت الأساسي للدمج
-                if (index < clips.size - 1) {
-                    val lastSampleTime = if (extractor.sampleTime > 0) extractor.sampleTime else 0
-                    baseTimeUs += lastSampleTime - (clip.startMs * 1000)
-                }
-
-                extractor.release()
-                onProgress(((index + 1).toFloat() / clips.size * 100).toInt())
+                val newTrack = trackMap[extractor.sampleTrackIndex] ?: continue
+                info.presentationTimeUs = extractor.sampleTime - (startMs * 1000)
+                info.flags = extractor.sampleFlags
+                muxer.writeSampleData(newTrack, buffer, info)
+                extractor.advance()
             }
 
             muxer.stop()
             muxer.release()
-            return@withContext true
+            extractor.release()
+            return true
         } catch (e: Exception) {
             e.printStackTrace()
-            muxer.release()
-            return@withContext false
+            return false
         }
     }
 }

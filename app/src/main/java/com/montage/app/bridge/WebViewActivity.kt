@@ -52,7 +52,6 @@ class WebViewActivity : AppCompatActivity() {
         webView.webChromeClient = WebChromeClient()
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
-                // إعلام الواجهة بأن الجسر جاهز
                 callJS("updateBridgeIndicator", true)
             }
         }
@@ -64,9 +63,9 @@ class WebViewActivity : AppCompatActivity() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             when(type) {
-                "video" -> type = "video/*"
-                "image" -> type = "image/*"
-                "audio" -> type = "audio/*"
+                "video" -> this.type = "video/*"
+                "image" -> this.type = "image/*"
+                "audio" -> this.type = "audio/*"
             }
         }
         when(type) {
@@ -78,7 +77,6 @@ class WebViewActivity : AppCompatActivity() {
 
     fun loadVideo(uri: Uri) {
         currentVideoUri = uri
-        // إرسال مسار الفيديو إلى JavaScript
         callJS("onVideoLoaded", uri.toString(), 0, 0, 0)
     }
 
