@@ -13,8 +13,7 @@
         android:theme="@style/AppTheme"
         android:requestLegacyExternalStorage="true">
 
-        <activity
-            android:name=".SplashActivity"
+        <activity android:name=".SplashActivity"
             android:exported="true"
             android:theme="@style/AppTheme">
             <intent-filter>
@@ -23,19 +22,16 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".ui.projects.ProjectsActivity"
-            android:exported="false"
+        <activity android:name=".ui.projects.ProjectsActivity"
+            android:theme="@style/AppTheme"/>
+        <activity android:name=".ui.editor.EditorActivity"
+            android:theme="@style/AppTheme"/>
+        <activity android:name=".ui.export.ExportSettingsActivity"
+            android:theme="@style/AppTheme"/>
+        <activity android:name=".ui.export.ExportActivity"
             android:theme="@style/AppTheme"/>
 
-        <activity
-            android:name=".ui.editor.EditorActivity"
-            android:exported="false"
-            android:theme="@style/AppTheme"/>
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="false"
+        <activity android:name=".MainActivity"
             android:theme="@style/AppTheme"/>
 
     </application>

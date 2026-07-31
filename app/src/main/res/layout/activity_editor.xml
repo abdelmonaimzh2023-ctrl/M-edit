@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -10,109 +11,52 @@
         android:id="@+id/videoView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1" />
 
-    <!-- شريط التقدم الزمني -->
-    <LinearLayout
+    <!-- شريط القص RangeSlider -->
+    <com.google.android.material.slider.RangeSlider
+        android:id="@+id/rangeSlider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center_vertical">
+        android:layout_marginHorizontal="16dp"
+        android:valueFrom="0.0"
+        android:valueTo="100.0"
+        app:thumbColor="#4CAF50"
+        app:trackColorActive="#4CAF50"
+        app:trackColorInactive="#30FFFFFF"
+        app:tickVisible="false"
+        app:labelBehavior="gone" />
 
-        <TextView
-            android:id="@+id/startTime"
-            android:layout_width="50dp"
-            android:layout_height="wrap_content"
-            android:text="0:00"
-            android:textColor="#80FFFFFF"
-            android:textSize="12sp"/>
-
-        <SeekBar
-            android:id="@+id/seekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="8dp"
-            android:progressTint="#4CAF50"
-            android:thumbTint="#4CAF50"/>
-
-        <TextView
-            android:id="@+id/endTime"
-            android:layout_width="50dp"
-            android:layout_height="wrap_content"
-            android:text="0:00"
-            android:textColor="#80FFFFFF"
-            android:textSize="12sp"/>
-    </LinearLayout>
-
-    <!-- أزرار التحكم -->
+    <!-- أزرار التحكم (Material Icon Buttons) -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:layout_gravity="center"
+        android:layout_marginVertical="12dp">
 
-        <LinearLayout
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPlay"
-            android:layout_width="0dp"
+            android:layout_width="44dp"
             android:layout_height="44dp"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/button_glass"
-            android:clickable="true"
-            android:layout_marginEnd="6dp">
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:icon="@drawable/ic_play"
+            app:iconSize="22dp"
+            app:cornerRadius="22dp"
+            android:layout_marginEnd="8dp"
+            style="@style/Widget.Material3.Button.IconButton" />
 
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:src="@drawable/ic_play"
-                android:layout_marginEnd="6dp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="تشغيل"
-                android:textSize="13sp"
-                android:textColor="#F2FFFFFF"/>
-        </LinearLayout>
-
-        <LinearLayout
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExport"
-            android:layout_width="0dp"
+            android:layout_width="44dp"
             android:layout_height="44dp"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/button_glass_green"
-            android:clickable="true"
-            android:layout_marginStart="6dp">
-
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:src="@drawable/ic_export"
-                android:layout_marginEnd="6dp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="تصدير"
-                android:textSize="13sp"
-                android:textColor="#F2FFFFFF"/>
-        </LinearLayout>
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:icon="@drawable/ic_export"
+            app:iconSize="22dp"
+            app:cornerRadius="22dp"
+            style="@style/Widget.Material3.Button.IconButton" />
     </LinearLayout>
 
-    <!-- زر الرجوع -->
-    <ImageButton
-        android:id="@+id/backButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="8dp"
-        android:src="@drawable/ic_pause"
-        android:background="@drawable/button_glass_dark"
-        android:tint="#80FFFFFF"
-        android:rotation="90"
-        android:scaleType="centerInside"/>
 </LinearLayout>
