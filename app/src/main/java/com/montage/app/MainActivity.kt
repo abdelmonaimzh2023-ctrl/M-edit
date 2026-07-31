@@ -2,22 +2,18 @@ package com.montage.app
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.view.animation.AnimationUtils
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.snackbar.Snackbar
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var videoView: VideoView
     private lateinit var loadingLayout: LinearLayout
-    private lateinit var tvLoading: TextView
     private var selectedVideoUri: Uri? = null
 
     companion object {
@@ -30,46 +26,26 @@ class MainActivity : AppCompatActivity() {
 
         videoView = findViewById(R.id.videoView)
         loadingLayout = findViewById(R.id.loadingLayout)
-        tvLoading = findViewById(R.id.tvLoading)
 
-        val slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up)
-        findViewById<LinearLayout>(R.id.mainLayout).startAnimation(slideUp)
-
-        findViewById<LinearLayout>(R.id.btnPickVideo).setOnClickListener {
-            openVideoPicker()
-        }
-
-        findViewById<LinearLayout>(R.id.btnPlay).setOnClickListener {
-            selectedVideoUri?.let {
-                videoView.start()
-                showSnackbar("تم التشغيل", "#4CAF50")
-            } ?: showSnackbar("اختر فيديو أولاً", "#FF9800")
-        }
-
-        findViewById<LinearLayout>(R.id.btnPause).setOnClickListener {
-            videoView.pause()
-            showSnackbar("تم الإيقاف", "#80FFFFFF")
-        }
-
-        findViewById<LinearLayout>(R.id.btnExport4K).setOnClickListener {
+        findViewById<View>(R.id.btnPickVideo).setOnClickListener { openVideoPicker() }
+        findViewById<View>(R.id.btnPlay).setOnClickListener { videoView.start() }
+        findViewById<View>(R.id.btnPause).setOnClickListener { videoView.pause() }
+        findViewById<View>(R.id.btnExport4K).setOnClickListener {
             if (selectedVideoUri != null) {
-                showLoading("جاري المعالجة...")
+                showLoading()
                 Handler(Looper.getMainLooper()).postDelayed({
                     hideLoading()
-                    showSnackbar("جاهز للتصدير 4K", "#4CAF50")
+                    Toast.makeText(this, "تم التصدير", Toast.LENGTH_SHORT).show()
                 }, 3000)
-            } else {
-                showSnackbar("اختر فيديو أولاً", "#FF9800")
             }
         }
     }
 
     private fun openVideoPicker() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+        startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "video/*"
-        }
-        startActivityForResult(intent, PICK_VIDEO)
+        }, PICK_VIDEO)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -80,30 +56,15 @@ class MainActivity : AppCompatActivity() {
                 selectedVideoUri = uri
                 videoView.setVideoURI(uri)
                 videoView.start()
-                showSnackbar("تم تحميل الفيديو", "#4CAF50")
             }
         }
     }
 
-    private fun showLoading(message: String) {
-        tvLoading.text = message
+    private fun showLoading() {
         loadingLayout.visibility = View.VISIBLE
-        loadingLayout.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_in))
     }
 
     private fun hideLoading() {
-        loadingLayout.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_out))
         loadingLayout.visibility = View.GONE
-    }
-
-    private fun showSnackbar(message: String, colorHex: String) {
-        val snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT)
-        snackbar.setBackgroundTint(Color.parseColor("#E61A1A1A"))
-        snackbar.setTextColor(Color.parseColor("#FFFFFF"))
-        
-        // إضافة حواف خضراء (متاح من Material Components)
-        snackbar.view.background = resources.getDrawable(R.drawable.snackbar_bg, theme)
-        
-        snackbar.show()
     }
 }
