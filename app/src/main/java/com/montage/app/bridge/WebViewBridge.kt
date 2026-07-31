@@ -1,15 +1,18 @@
 package com.montage.app.bridge
 
-import android.content.Context
 import android.net.Uri
 import android.webkit.JavascriptInterface
 import com.montage.app.engine.VideoClipper
-import com.montage.app.engine.ExportEngine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 
-class WebViewBridge(private val context: Context, private val activity: WebViewActivity) {
+class WebViewBridge(private val activity: WebViewActivity) {
+
+    private val scope = CoroutineScope(Dispatchers.Main)
 
     @JavascriptInterface
     fun openFilePicker(type: String) {
@@ -18,17 +21,17 @@ class WebViewBridge(private val context: Context, private val activity: WebViewA
 
     @JavascriptInterface
     fun trimVideo(startMs: Long, endMs: Long) {
-        activity.lifecycleScope.launch {
+        scope.launch {
             val inputUri = activity.currentVideoUri ?: return@launch
             val outputFile = File(activity.cacheDir, "trimmed_${System.currentTimeMillis()}.mp4")
-            val success = VideoClipper.trimVideo(activity, inputUri, outputFile, startMs, endMs)
-            activity.runOnUiThread {
-                if (success) {
-                    activity.loadVideo(Uri.fromFile(outputFile))
-                    activity.callJS("onOperationComplete", "trim", "success")
-                } else {
-                    activity.callJS("onExportError", "فشل القص")
-                }
+            val success = withContext(Dispatchers.IO) {
+                VideoClipper.trimVideo(activity, inputUri, outputFile, startMs, endMs)
+            }
+            if (success) {
+                activity.loadVideo(Uri.fromFile(outputFile))
+                activity.callJS("onOperationComplete", "trim", "success")
+            } else {
+                activity.callJS("onExportError", "فشل القص")
             }
         }
     }
@@ -119,22 +122,21 @@ class WebViewBridge(private val context: Context, private val activity: WebViewA
 
     @JavascriptInterface
     fun exportVideo(optionsJson: String) {
-        try {
-            val options = JSONObject(optionsJson)
-            activity.lifecycleScope.launch {
+        scope.launch {
+            try {
                 val inputUri = activity.currentVideoUri ?: return@launch
                 val outputFile = File(activity.getExternalFilesDir("exports"), "M-edit_${System.currentTimeMillis()}.mp4")
-                ExportEngine.simpleExport(
-                    context = activity,
-                    inputUri = inputUri,
-                    outputFile = outputFile
-                )
-                activity.runOnUiThread {
-                    activity.callJS("onExportComplete", outputFile.absolutePath)
+                val success = withContext(Dispatchers.IO) {
+                    VideoClipper.trimVideo(activity, inputUri, outputFile, 0, Long.MAX_VALUE)
                 }
+                if (success) {
+                    activity.callJS("onExportComplete", outputFile.absolutePath)
+                } else {
+                    activity.callJS("onExportError", "فشل التصدير")
+                }
+            } catch (e: Exception) {
+                activity.callJS("onExportError", e.message ?: "خطأ غير متوقع")
             }
-        } catch (e: Exception) {
-            activity.callJS("onExportError", e.message ?: "خطأ في التصدير")
         }
     }
 

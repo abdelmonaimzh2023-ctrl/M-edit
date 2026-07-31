@@ -40,7 +40,7 @@ class WebViewActivity : AppCompatActivity() {
         setContentView(R.layout.activity_webview)
 
         webView = findViewById(R.id.webview)
-        bridge = WebViewBridge(this, this)
+        bridge = WebViewBridge(this)
 
         webView.settings.apply {
             javaScriptEnabled = true
