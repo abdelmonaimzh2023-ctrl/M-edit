@@ -8,17 +8,10 @@ import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.nio.ByteBuffer
 
 object VideoProcessor {
 
-    /**
-     * قص فيديو بدون إعادة ترميز (يحافظ على الجودة الأصلية 100%)
-     * @param context السياق
-     * @param inputUri مسار الفيديو المدخل
-     * @param outputFile ملف الإخراج
-     * @param startMs وقت البداية بالميلي ثانية
-     * @param endMs وقت النهاية بالميلي ثانية
-     */
     suspend fun trimVideo(
         context: Context,
         inputUri: Uri,
@@ -33,9 +26,8 @@ object VideoProcessor {
             } ?: return@withContext false
 
             val muxer = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-
             val numTracks = extractor.trackCount
-            val trackIndices = mutableMapOf<Int, Int>() // old index -> new index
+            val trackIndices = mutableMapOf<Int, Int>()
 
             for (i in 0 until numTracks) {
                 val format = extractor.getTrackFormat(i)
@@ -53,20 +45,20 @@ object VideoProcessor {
                 return@withContext false
             }
 
-            // قص: التقدم إلى البداية
             extractor.seekTo(startMs * 1000, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
             muxer.start()
 
             val bufferInfo = android.media.MediaCodec.BufferInfo()
+            val buffer = ByteBuffer.allocate(1024 * 1024) // 1MB buffer
             var outputStarted = false
 
             while (true) {
                 bufferInfo.offset = 0
-                bufferInfo.size = extractor.readSampleData(extractor.sampleData!!, 0)
+                bufferInfo.size = extractor.readSampleData(buffer, 0)
 
                 if (bufferInfo.size < 0) break
 
-                val currentSampleTime = extractor.sampleTime / 1000 // to ms
+                val currentSampleTime = extractor.sampleTime / 1000
                 if (currentSampleTime > endMs) break
 
                 val trackIndex = extractor.sampleTrackIndex
@@ -75,7 +67,7 @@ object VideoProcessor {
                 bufferInfo.presentationTimeUs = extractor.sampleTime
                 bufferInfo.flags = extractor.sampleFlags
 
-                muxer.writeSampleData(newTrackIndex, extractor.sampleData!!, bufferInfo)
+                muxer.writeSampleData(newTrackIndex, buffer, bufferInfo)
                 extractor.advance()
                 outputStarted = true
             }
