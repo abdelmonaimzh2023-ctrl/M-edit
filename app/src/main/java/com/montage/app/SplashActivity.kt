@@ -11,10 +11,9 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        val lottie = findViewById<LottieAnimationView>(R.id.lottieAnimation)
+        val lottie = findViewById<LottieAnimationView>(R.id.splashAnimation)
         lottie.playAnimation()
 
-        // الانتقال بعد 3 ثوان
         lottie.postDelayed({
             startActivity(Intent(this, ProjectsActivity::class.java))
             finish()
