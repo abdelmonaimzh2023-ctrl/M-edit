@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="android:colorBackground">#FF0A0A0F</item>
-        <item name="android:statusBarColor">#FF000000</item>
-        <item name="android:navigationBarColor">#FF000000</item>
-        <item name="android:windowBackground">#FF0A0A0F</item>
-        <item name="colorPrimary">#FF4CAF50</item>
-        <item name="colorPrimaryDark">#FF000000</item>
-        <item name="colorAccent">#FF4CAF50</item>
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_on_primary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_primary_container</item>
+        <item name="colorSecondary">@color/md_theme_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_on_secondary</item>
+        <item name="colorSurface">@color/md_theme_surface</item>
+        <item name="colorOnSurface">@color/md_theme_on_surface</item>
+        <item name="android:statusBarColor">@color/md_theme_surface</item>
+        <item name="android:navigationBarColor">@color/md_theme_surface</item>
     </style>
 </resources>

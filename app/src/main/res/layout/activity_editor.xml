@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FF0A0A0F">
+    android:background="@color/md_theme_surface">
 
-    <!-- فيديو -->
-    <VideoView
-        android:id="@+id/videoView"
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/playerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"/>
 
-    <!-- شريط القص RangeSlider -->
     <com.google.android.material.slider.RangeSlider
         android:id="@+id/rangeSlider"
         android:layout_width="match_parent"
@@ -21,42 +18,37 @@
         android:layout_marginHorizontal="16dp"
         android:valueFrom="0.0"
         android:valueTo="100.0"
-        app:thumbColor="#4CAF50"
-        app:trackColorActive="#4CAF50"
-        app:trackColorInactive="#30FFFFFF"
-        app:tickVisible="false"
-        app:labelBehavior="gone" />
+        app:thumbColor="@color/md_theme_primary"
+        app:trackColorActive="@color/md_theme_primary"
+        app:trackColorInactive="@color/md_theme_on_surface"
+        app:labelBehavior="gone"/>
 
-    <!-- أزرار التحكم (Material Icon Buttons) -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:layout_gravity="center"
+        android:orientation="horizontal"
         android:layout_marginVertical="12dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPlay"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             app:icon="@drawable/ic_play"
-            app:iconSize="22dp"
-            app:cornerRadius="22dp"
+            app:iconSize="24dp"
+            app:cornerRadius="24dp"
             android:layout_marginEnd="8dp"
-            style="@style/Widget.Material3.Button.IconButton" />
+            style="@style/Widget.Material3.Button.IconButton"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExport"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             app:icon="@drawable/ic_export"
-            app:iconSize="22dp"
-            app:cornerRadius="22dp"
-            style="@style/Widget.Material3.Button.IconButton" />
+            app:iconSize="24dp"
+            app:cornerRadius="24dp"
+            style="@style/Widget.Material3.Button.IconButton"/>
     </LinearLayout>
-
 </LinearLayout>

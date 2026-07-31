@@ -34,9 +34,16 @@ android {
 }
 
 dependencies {
+    // AndroidX أساسية
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
+    
+    // Material 3 (Material You)
     implementation("com.google.android.material:material:1.12.0")
+    
+    // ExoPlayer (بديل VideoView)
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-ui:1.4.1")
     
     // Lottie Animation
     implementation("com.airbnb.android:lottie:6.4.0")
