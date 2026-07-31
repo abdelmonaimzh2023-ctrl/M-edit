@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>محرر M-edit</title>
+<link rel="stylesheet" href="css/glassmorphism.css">
+<style>
+  .editor-container { display: flex; flex-direction: column; height: 100vh; }
+  .topbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(env(safe-area-inset-top) + 8px) 12px 8px;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(10,10,14,.35);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    z-index: 10;
+  }
+  .preview-area {
+    flex: 1; position: relative; background: #000;
+    overflow: hidden;
+  }
+  video { width: 100%; height: 100%; object-fit: contain; }
+  canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+  .timeline-container {
+    padding: 8px 12px; background: rgba(10,10,14,.5);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+  }
+  .toolbar {
+    display: flex; gap: 6px; padding: 6px 8px; overflow-x: auto;
+    background: rgba(10,10,14,.35);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    border-top: 1px solid var(--glass-border);
+  }
+  .tool-btn {
+    flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
+    min-width: 56px; padding: 6px 2px; border-radius: var(--r-md);
+    background: var(--glass-bg); border: 1px solid transparent;
+    color: var(--text-1); font-size: 11px; gap: 4px;
+    transition: all .15s var(--ease);
+  }
+  .tool-btn:active { background: var(--glass-bg-press); transform: scale(.92); }
+  .tool-btn.active { border-color: var(--accent-blue); background: var(--glass-bg-strong); }
+  .tool-btn .tool-ic { font-size: 20px; }
+  .layer-item {
+    display: flex; align-items: center; padding: 10px; margin: 4px 0;
+    border-radius: var(--r-md); background: var(--glass-bg); font-size: 13px;
+  }
+  .layer-item button {
+    margin-right: auto; width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,69,58,.15); color: var(--accent-pink); display: flex;
+    align-items: center; justify-content: center;
+  }
+  .panel {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(20,20,28,.8);
+    -webkit-backdrop-filter: blur(34px); backdrop-filter: blur(34px);
+    border-radius: 26px 26px 0 0; padding: 12px 18px calc(env(safe-area-inset-bottom) + 20px);
+    border-top: 1px solid var(--glass-border);
+    transform: translateY(100%); transition: transform .35s var(--ease);
+    z-index: 50; max-height: 60vh; overflow-y: auto;
+  }
+  .panel.show { transform: translateY(0); }
+  .panel-handle { width: 36px; height: 4px; background: rgba(255,255,255,.25); border-radius: 4px; margin: 4px auto 14px; }
+  .hidden { display: none !important; }
+  .field { margin-bottom: 16px; }
+  .field-label { font-size: 12px; color: var(--text-2); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .field-label .val { color: var(--text-1); font-weight: 700; }
+  .swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; display: inline-block; margin: 4px; }
+  .swatch.active { border-color: white; transform: scale(1.1); }
+</style>
+</head>
+<body>
+<div class="editor-container">
+  <!-- الشريط العلوي -->
+  <div class="topbar">
+    <button class="btn-icon" onclick="window.location.href='index.html'">←</button>
+    <span style="flex:1; text-align:center; font-weight:700;">M-edit محرر</span>
+    <button class="btn-icon" id="btnExportMenu">⬆️</button>
+  </div>
+
+  <!-- منطقة المعاينة -->
+  <div class="preview-area" id="previewContainer">
+    <video id="mainVideo" controls crossorigin="anonymous" playsinline></video>
+    <canvas id="overlayCanvas"></canvas>
+  </div>
+
+  <!-- الخط الزمني -->
+  <div class="timeline-container">
+    <input type="range" id="seekSlider" min="0" max="100" value="0" style="width:100%; margin-bottom:4px;">
+    <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-2);">
+      <span id="currentTime">00:00</span><span id="totalTime">00:00</span>
+    </div>
+  </div>
+
+  <!-- شريط الأدوات -->
+  <div class="toolbar" id="toolbar">
+    <div class="tool-btn" onclick="showPanel('speedPanel')"><span class="tool-ic">⏱</span>سرعة</div>
+    <div class="tool-btn" onclick="addImageLayer()"><span class="tool-ic">🖼</span>صورة</div>
+    <div class="tool-btn" onclick="addAudioLayer()"><span class="tool-ic">🎵</span>صوت</div>
+    <div class="tool-btn" onclick="showPanel('textPanel')"><span class="tool-ic">📝</span>نص</div>
+    <div class="tool-btn" onclick="showPanel('trimPanel')"><span class="tool-ic">✂️</span>قص</div>
+    <div class="tool-btn" onclick="showPanel('layersPanel')"><span class="tool-ic">📋</span>طبقات</div>
+  </div>
+</div>
+
+<!-- لوحات الأدوات -->
+<div class="panel" id="speedPanel"><div class="panel-handle"></div>
+  <h4 style="margin-bottom:16px;">سرعة التشغيل</h4>
+  <input type="range" id="speedSlider" class="slider" min="0.25" max="4" step="0.25" value="1" oninput="updateSpeed(this.value)">
+  <div style="display:flex; justify-content:space-between; margin-top:8px;">
+    <span>0.25x</span><span id="speedValue" style="font-weight:700;">1.00x</span><span>4x</span>
+  </div>
+  <button class="btn-primary" style="width:100%; margin-top:16px;" onclick="closePanel('speedPanel')">تم</button>
+</div>
+
+<div class="panel" id="textPanel"><div class="panel-handle"></div>
+  <h4>إضافة نص</h4>
+  <input type="text" id="textInput" class="slider" placeholder="اكتب النص هنا..." style="padding:12px; background:rgba(255,255,255,.07); border:1px solid var(--glass-border); border-radius:var(--r-md); width:100%; margin-bottom:12px;">
+  <div class="field">
+    <div class="field-label">اللون</div>
+    <div id="colorSwatches">
+      <span class="swatch active" data-color="#FFFFFF" style="background:#FFFFFF;"></span>
+      <span class="swatch" data-color="#0A84FF" style="background:#0A84FF;"></span>
+      <span class="swatch" data-color="#FF9F0A" style="background:#FF9F0A;"></span>
+      <span class="swatch" data-color="#FF375F" style="background:#FF375F;"></span>
+      <span class="swatch" data-color="#30D158" style="background:#30D158;"></span>
+    </div>
+  </div>
+  <div class="field">
+    <div class="field-label">حجم الخط <span class="val" id="fontSizeVal">28px</span></div>
+    <input type="range" id="fontSizeSlider" class="slider" min="14" max="64" value="28" oninput="document.getElementById('fontSizeVal').textContent = this.value+'px'">
+  </div>
+  <button class="btn-primary" style="width:100%;" onclick="addTextToStage()">إضافة</button>
+</div>
+
+<div class="panel" id="trimPanel"><div class="panel-handle"></div>
+  <h4>اقتصاص سريع</h4>
+  <div style="display:flex; gap:8px; margin-bottom:12px;">
+    <input type="number" id="trimStart" placeholder="بداية (ث)" style="flex:1; padding:12px; background:rgba(255,255,255,.07); border:1px solid var(--glass-border); border-radius:var(--r-md);">
+    <input type="number" id="trimEnd" placeholder="نهاية (ث)" style="flex:1; padding:12px; background:rgba(255,255,255,.07); border:1px solid var(--glass-border); border-radius:var(--r-md);">
+  </div>
+  <button class="btn-primary" style="width:100%;" onclick="applyTrim()">تطبيق القص</button>
+</div>
+
+<div class="panel" id="layersPanel"><div class="panel-handle"></div>
+  <h4>إدارة الطبقات</h4>
+  <div id="layerList"></div>
+  <button class="btn-primary" style="width:100%; margin-top:12px;" onclick="closePanel('layersPanel')">تم</button>
+</div>
+
+<div class="panel" id="exportPanel"><div class="panel-handle"></div>
+  <h4>تصدير الفيديو</h4>
+  <div class="field">
+    <div class="field-label">الدقة <span class="val" id="resVal">1080p</span></div>
+    <div class="segmented" id="resSeg">
+      <button data-res="1080p" class="active">1080p</button>
+      <button data-res="2k">2K</button>
+      <button data-res="4k">4K</button>
+    </div>
+  </div>
+  <div class="field">
+    <div class="field-label">الإطارات</div>
+    <div class="segmented" id="fpsSeg">
+      <button data-fps="30" class="active">30</button>
+      <button data-fps="60">60</button>
+    </div>
+  </div>
+  <button class="btn-primary" style="width:100%; margin-top:16px;" onclick="startExport()">بدء التصدير</button>
+</div>
+
+<!-- نافذة تقدم التصدير -->
+<div id="exportOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(12px); z-index:80; display:none; align-items:center; justify-content:center; flex-direction:column;">
+  <svg width="140" height="140" viewBox="0 0 140 140">
+    <defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0A84FF"/><stop offset="100%" stop-color="#5E5CE6"/></linearGradient></defs>
+    <circle class="ring-bg" cx="70" cy="70" r="60" stroke="rgba(255,255,255,.08)" stroke-width="8" fill="none"/>
+    <circle class="ring-fg" id="progressRing" cx="70" cy="70" r="60" stroke="url(#ringGrad)" stroke-width="8" fill="none" stroke-dasharray="377" stroke-dashoffset="377"/>
+  </svg>
+  <div id="exportPercent" style="font-size:28px; font-weight:800; margin-top:-90px;">0%</div>
+  <div id="exportStatus" style="color:var(--text-2); margin-top:70px;">جاري التحضير...</div>
+</div>
+
+<input type="file" id="hiddenImageInput" accept="image/*" style="display:none">
+<input type="file" id="hiddenAudioInput" accept="audio/*" style="display:none">
+
+<script src="js/bridge.js"></script>
+<script>
+  // ========== تهيئة ==========
+  const video = document.getElementById('mainVideo');
+  const seekSlider = document.getElementById('seekSlider');
+  let layers = [];
+  let selectedLayer = null;
+
+  const videoUri = sessionStorage.getItem('currentVideoUri');
+  if (videoUri) video.src = videoUri;
+
+  video.addEventListener('loadedmetadata', () => {
+    seekSlider.max = video.duration;
+    document.getElementById('totalTime').textContent = formatTime(video.duration);
+  });
+  video.addEventListener('timeupdate', () => {
+    seekSlider.value = video.currentTime;
+    document.getElementById('currentTime').textContent = formatTime(video.currentTime);
+  });
+  seekSlider.addEventListener('input', () => {
+    video.currentTime = seekSlider.value;
+  });
+
+  function formatTime(sec) {
+    const m = Math.floor(sec/60);
+    const s = Math.floor(sec%60);
+    return m+':'+String(s).padStart(2,'0');
+  }
+
+  // ========== لوحات ==========
+  function showPanel(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('show'));
+    document.getElementById(id).classList.add('show');
+  }
+  function closePanel(id) {
+    document.getElementById(id).classList.remove('show');
+  }
+
+  // ========== السرعة ==========
+  function updateSpeed(val) {
+    video.playbackRate = parseFloat(val);
+    document.getElementById('speedValue').textContent = parseFloat(val).toFixed(2) + 'x';
+    callNative('changeSpeed', parseFloat(val));
+  }
+
+  // ========== طبقة صورة ==========
+  function addImageLayer() {
+    if (window.callNative) callNative('openFilePicker', 'image');
+    else document.getElementById('hiddenImageInput').click();
+  }
+  document.getElementById('hiddenImageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    createImageElement(url);
+  });
+  window.addEventListener('bridge:filePicked', (e) => {
+    if (e.detail.type === 'image') createImageElement(e.detail.path);
+  });
+
+  function createImageElement(src) {
+    const div = document.createElement('div');
+    div.className = 'layer-chip image-layer';
+    div.innerHTML = `<img src="${src}" style="width:120px; height:auto;">`;
+    div.style.left = '30px'; div.style.top = '40px';
+    document.getElementById('previewContainer').appendChild(div);
+    makeDraggable(div);
+    layers.push({ type: 'image', el: div, src });
+    updateLayerList();
+  }
+
+  // ========== طبقة صوت ==========
+  function addAudioLayer() {
+    if (window.callNative) callNative('openFilePicker', 'audio');
+    else document.getElementById('hiddenAudioInput').click();
+  }
+  document.getElementById('hiddenAudioInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const audio = new Audio(URL.createObjectURL(file));
+    audio.play();
+    layers.push({ type: 'audio', el: audio, name: file.name });
+    updateLayerList();
+  });
+
+  // ========== نص ==========
+  function addTextToStage() {
+    const text = document.getElementById('textInput').value.trim();
+    if (!text) return;
+    const color = document.querySelector('#colorSwatches .swatch.active')?.dataset.color || '#fff';
+    const size = document.getElementById('fontSizeSlider').value + 'px';
+    const div = document.createElement('div');
+    div.className = 'layer-chip text-layer';
+    div.textContent = text;
+    div.style.color = color;
+    div.style.fontSize = size;
+    div.style.left = '50px'; div.style.top = '60px';
+    document.getElementById('previewContainer').appendChild(div);
+    makeDraggable(div);
+    layers.push({ type: 'text', el: div, text, color, size });
+    closePanel('textPanel');
+    updateLayerList();
+  }
+
+  // ========== قص ==========
+  function applyTrim() {
+    const start = parseFloat(document.getElementById('trimStart').value) || 0;
+    const end = parseFloat(document.getElementById('trimEnd').value) || video.duration;
+    if (isNaN(start) || isNaN(end)) return;
+    callNative('trimVideo', Math.round(start*1000), Math.round(end*1000));
+    alert('تم إرسال أمر القص (يُعالج في الخلفية)');
+    closePanel('trimPanel');
+  }
+
+  // ========== طبقات ==========
+  function updateLayerList() {
+    const list = document.getElementById('layerList');
+    list.innerHTML = '';
+    layers.forEach((l, i) => {
+      const row = document.createElement('div');
+      row.className = 'layer-item';
+      let label = l.type === 'image' ? 'صورة' : l.type === 'audio' ? 'صوت' : 'نص';
+      row.innerHTML = `<span>${label}</span>`;
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '✕';
+      delBtn.onclick = () => {
+        l.el.remove();
+        layers.splice(i,1);
+        updateLayerList();
+      };
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    });
+  }
+  document.getElementById('btnExportMenu').addEventListener('click', () => showPanel('exportPanel'));
+
+  // ========== تصدير ==========
+  function startExport() {
+    const resBtn = document.querySelector('#resSeg button.active');
+    const fpsBtn = document.querySelector('#fpsSeg button.active');
+    const resolution = resBtn?.dataset.res || '1080p';
+    const fps = fpsBtn?.dataset.fps || 30;
+    document.getElementById('exportOverlay').style.display = 'flex';
+    setExportProgress(0, 'جاري التحضير...');
+    callNative('exportVideo', JSON.stringify({ resolution, fps, quality: 'عالية' }));
+  }
+
+  function setExportProgress(percent, statusText) {
+    const ring = document.getElementById('progressRing');
+    const circumference = 2 * Math.PI * 60;
+    ring.style.strokeDasharray = circumference;
+    ring.style.strokeDashoffset = circumference - (percent/100) * circumference;
+    document.getElementById('exportPercent').textContent = Math.round(percent) + '%';
+    document.getElementById('exportStatus').textContent = statusText || '';
+  }
+
+  window.addEventListener('bridge:exportProgress', (e) => {
+    setExportProgress(e.detail.percent, e.detail.statusText);
+  });
+  window.addEventListener('bridge:exportComplete', (e) => {
+    document.getElementById('exportOverlay').style.display = 'none';
+    alert('تم التصدير: ' + e.detail.outputPath);
+  });
+  window.addEventListener('bridge:exportError', (e) => {
+    document.getElementById('exportOverlay').style.display = 'none';
+    alert('خطأ: ' + e.detail.message);
+  });
+
+  // ========== السحب ==========
+  function makeDraggable(el) {
+    let pos = { x:0, y:0 };
+    el.addEventListener('pointerdown', (e) => {
+      document.querySelectorAll('.layer-chip').forEach(l => l.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedLayer = el;
+      pos.x = e.clientX - el.offsetLeft;
+      pos.y = e.clientY - el.offsetTop;
+      function move(e) {
+        el.style.left = (e.clientX - pos.x) + 'px';
+        el.style.top = (e.clientY - pos.y) + 'px';
+      }
+      function up() {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      }
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+  }
+</script>
+</body>
+</html>
