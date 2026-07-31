@@ -2,20 +2,28 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F0F23">
+    android:background="#FF0A0A0F">
 
     <VideoView
         android:id="@+id/videoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <!-- مؤقتاً: زر رجوع -->
-    <ImageButton
-        android:id="@+id/backButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_margin="16dp"
-        android:src="@drawable/ic_pause"
-        android:background="@drawable/glass_circle"
-        android:tint="#FFFFFF"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:gravity="center_vertical">
+
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@drawable/ic_pause"
+            android:background="@drawable/button_glass_dark"
+            android:tint="#80FFFFFF"
+            android:rotation="90"
+            android:scaleType="centerInside"/>
+    </LinearLayout>
 </FrameLayout>

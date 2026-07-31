@@ -2,6 +2,7 @@ package com.montage.app
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -31,39 +32,34 @@ class MainActivity : AppCompatActivity() {
         loadingLayout = findViewById(R.id.loadingLayout)
         tvLoading = findViewById(R.id.tvLoading)
 
-        // أنيميشن دخول الواجهة
         val slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up)
         findViewById<LinearLayout>(R.id.mainLayout).startAnimation(slideUp)
 
-        // زر اختيار الفيديو
         findViewById<LinearLayout>(R.id.btnPickVideo).setOnClickListener {
             openVideoPicker()
         }
 
-        // زر التشغيل
         findViewById<LinearLayout>(R.id.btnPlay).setOnClickListener {
             selectedVideoUri?.let {
                 videoView.start()
                 showSnackbar("تم التشغيل", "#4CAF50")
-            } ?: showSnackbar("الرجاء اختيار فيديو", "#FF9800")
+            } ?: showSnackbar("اختر فيديو أولاً", "#FF9800")
         }
 
-        // زر الإيقاف
         findViewById<LinearLayout>(R.id.btnPause).setOnClickListener {
             videoView.pause()
-            showSnackbar("تم الإيقاف", "#2196F3")
+            showSnackbar("تم الإيقاف", "#80FFFFFF")
         }
 
-        // زر التصدير
         findViewById<LinearLayout>(R.id.btnExport4K).setOnClickListener {
             if (selectedVideoUri != null) {
-                showLoading("جاري معالجة الفيديو...")
+                showLoading("جاري المعالجة...")
                 Handler(Looper.getMainLooper()).postDelayed({
                     hideLoading()
                     showSnackbar("جاهز للتصدير 4K", "#4CAF50")
                 }, 3000)
             } else {
-                showSnackbar("الرجاء اختيار فيديو", "#FF9800")
+                showSnackbar("اختر فيديو أولاً", "#FF9800")
             }
         }
     }
@@ -92,20 +88,22 @@ class MainActivity : AppCompatActivity() {
     private fun showLoading(message: String) {
         tvLoading.text = message
         loadingLayout.visibility = View.VISIBLE
-        val fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in)
-        loadingLayout.startAnimation(fadeIn)
+        loadingLayout.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_in))
     }
 
     private fun hideLoading() {
-        val fadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out)
-        loadingLayout.startAnimation(fadeOut)
+        loadingLayout.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_out))
         loadingLayout.visibility = View.GONE
     }
 
     private fun showSnackbar(message: String, colorHex: String) {
         val snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT)
-        snackbar.setBackgroundTint(android.graphics.Color.parseColor(colorHex))
-        snackbar.setTextColor(android.graphics.Color.WHITE)
+        snackbar.setBackgroundTint(Color.parseColor("#E61A1A1A"))
+        snackbar.setTextColor(Color.parseColor("#FFFFFF"))
+        
+        // إضافة حواف خضراء (متاح من Material Components)
+        snackbar.view.background = resources.getDrawable(R.drawable.snackbar_bg, theme)
+        
         snackbar.show()
     }
 }

@@ -10,13 +10,13 @@
         android:icon="@drawable/icon"
         android:roundIcon="@drawable/icon"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+        android:theme="@style/AppTheme"
         android:requestLegacyExternalStorage="true">
 
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+            android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -25,15 +25,18 @@
 
         <activity
             android:name=".ui.projects.ProjectsActivity"
-            android:exported="false"/>
+            android:exported="false"
+            android:theme="@style/AppTheme"/>
 
         <activity
             android:name=".ui.editor.EditorActivity"
-            android:exported="false"/>
+            android:exported="false"
+            android:theme="@style/AppTheme"/>
 
         <activity
             android:name=".MainActivity"
-            android:exported="false"/>
+            android:exported="false"
+            android:theme="@style/AppTheme"/>
 
     </application>
 </manifest>

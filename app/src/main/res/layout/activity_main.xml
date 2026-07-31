@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F0F23">
+    android:background="#FF0A0A0F">
 
     <!-- المحتوى الرئيسي -->
     <LinearLayout
@@ -19,21 +19,21 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="20dp">
 
             <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@drawable/ic_logo"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/icon"
                 android:layout_marginEnd="10dp"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="M-edit"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
+                android:textColor="#F2FFFFFF"
                 android:letterSpacing="0.03"/>
         </LinearLayout>
 
@@ -41,17 +41,17 @@
         <LinearLayout
             android:id="@+id/btnPickVideo"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:orientation="horizontal"
             android:gravity="center"
-            android:background="@drawable/button_rounded"
+            android:background="@drawable/button_glass"
             android:clickable="true"
             android:focusable="true"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="10dp">
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@drawable/ic_video_library"
                 android:layout_marginEnd="10dp"/>
 
@@ -59,9 +59,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="اختيار فيديو"
-                android:textSize="15sp"
-                android:textColor="#FFFFFF"
-                android:letterSpacing="0.02"/>
+                android:textSize="14sp"
+                android:textColor="#F2FFFFFF"/>
         </LinearLayout>
 
         <!-- مشغل الفيديو -->
@@ -71,66 +70,66 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="12dp"
-            android:background="@drawable/video_rounded"/>
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/glass_surface"/>
 
         <!-- أزرار التحكم -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="10dp">
 
             <LinearLayout
                 android:id="@+id/btnPlay"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:background="@drawable/button_rounded"
+                android:background="@drawable/button_glass"
                 android:clickable="true"
                 android:focusable="true"
-                android:layout_marginEnd="6dp">
+                android:layout_marginEnd="5dp">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
                     android:src="@drawable/ic_play"
-                    android:layout_marginEnd="8dp"/>
+                    android:layout_marginEnd="6dp"/>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="تشغيل"
-                    android:textSize="14sp"
-                    android:textColor="#FFFFFF"/>
+                    android:textSize="13sp"
+                    android:textColor="#F2FFFFFF"/>
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/btnPause"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:background="@drawable/button_rounded"
+                android:background="@drawable/button_glass"
                 android:clickable="true"
                 android:focusable="true"
-                android:layout_marginStart="6dp">
+                android:layout_marginStart="5dp">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
                     android:src="@drawable/ic_pause"
-                    android:layout_marginEnd="8dp"/>
+                    android:layout_marginEnd="6dp"/>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="إيقاف"
-                    android:textSize="14sp"
-                    android:textColor="#FFFFFF"/>
+                    android:textSize="13sp"
+                    android:textColor="#F2FFFFFF"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -138,16 +137,16 @@
         <LinearLayout
             android:id="@+id/btnExport4K"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:orientation="horizontal"
             android:gravity="center"
-            android:background="@drawable/button_export"
+            android:background="@drawable/button_glass_green"
             android:clickable="true"
             android:focusable="true">
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@drawable/ic_export"
                 android:layout_marginEnd="10dp"/>
 
@@ -155,9 +154,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="تصدير 4K"
-                android:textSize="15sp"
-                android:textColor="#FFFFFF"
-                android:letterSpacing="0.02"/>
+                android:textSize="14sp"
+                android:textColor="#F2FFFFFF"/>
         </LinearLayout>
 
     </LinearLayout>
@@ -169,26 +167,23 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:background="#D90F0F23"
+        android:background="#DD0A0A0F"
         android:visibility="gone">
 
         <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:indeterminateTint="#E91E63"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:indeterminateTint="#4CAF50"
             style="?android:attr/progressBarStyle"/>
 
         <TextView
             android:id="@+id/tvLoading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="جاري معالجة الفيديو..."
-            android:textSize="15sp"
-            android:textColor="#FFFFFF"
-            android:layout_marginTop="20dp"
-            android:letterSpacing="0.02"/>
-
+            android:text="جاري المعالجة..."
+            android:textSize="14sp"
+            android:textColor="#B3FFFFFF"
+            android:layout_marginTop="20dp"/>
     </LinearLayout>
 
 </FrameLayout>
